@@ -1,0 +1,36 @@
+{
+  "name": "meshlink",
+  "version": "2.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite --host",
+    "relay": "node server.js",
+    "start": "node server.js & vite --host",
+    "build": "vite build",
+    "preview": "vite preview"
+  },
+  "keywords": [
+    "mesh",
+    "offline",
+    "communication",
+    "p2p",
+    "encryption",
+    "bluetooth",
+    "pwa",
+    "disaster"
+  ],
+  "author": "",
+  "license": "ISC",
+  "description": "Portable AI-Assisted Offline Communication System Using Decentralized Mesh Networking",
+  "dependencies": {
+    "dexie": "^4.3.0",
+    "react": "^19.2.4",
+    "react-dom": "^19.2.4",
+    "uuid": "^13.0.0",
+    "ws": "^8.19.0"
+  },
+  "devDependencies": {
+    "@vitejs/plugin-react": "^4.7.0",
+    "vite": "^5.4.21"
+  }
+}

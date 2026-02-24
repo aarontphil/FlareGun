@@ -1,0 +1,29 @@
+{
+    "name": "MeshLink — Offline Disaster Communication",
+    "short_name": "MeshLink",
+    "description": "Portable AI-Assisted Offline Communication System Using Decentralized Mesh Networking",
+    "start_url": "/",
+    "display": "standalone",
+    "orientation": "portrait",
+    "background_color": "#0a0e1a",
+    "theme_color": "#6c5ce7",
+    "categories": [
+        "communication",
+        "utilities",
+        "emergency"
+    ],
+    "icons": [
+        {
+            "src": "/icons/icon-192.png",
+            "sizes": "192x192",
+            "type": "image/png",
+            "purpose": "any maskable"
+        },
+        {
+            "src": "/icons/icon-512.png",
+            "sizes": "512x512",
+            "type": "image/png",
+            "purpose": "any maskable"
+        }
+    ]
+}

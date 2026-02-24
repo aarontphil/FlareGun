@@ -1,0 +1,28 @@
+# Node.js
+node_modules/
+dist/
+.env
+
+# Python
+__pycache__/
+*.pyc
+.venv/
+venv/
+
+# Flutter
+meshlink_app/.dart_tool/
+meshlink_app/.packages
+meshlink_app/build/
+meshlink_app/.flutter-plugins
+meshlink_app/.flutter-plugins-dependencies
+meshlink_app/android/.gradle/
+meshlink_app/android/local.properties
+meshlink_app/android/app/build/
+meshlink_app/.idea/
+
+# IDE
+.vscode/
+*.swp
+*.swo
+.DS_Store
+Thumbs.db
