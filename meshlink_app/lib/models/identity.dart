@@ -1,37 +1,31 @@
 import 'package:uuid/uuid.dart';
 
-/// This device's identity in the mesh network.
 class DeviceIdentity {
-  final String id;
+  String id;
   String name;
-  String emoji;
   final int createdAt;
-
-  static const _emojis = ['🟢', '🔵', '🟣', '🟠', '🔴', '🟡', '🧑‍🚀', '🧑‍🚒', '🧑‍⚕️', '🦺', '📡', '💎'];
 
   DeviceIdentity({
     String? id,
     String? name,
-    String? emoji,
     int? createdAt,
   })  : id = id ?? const Uuid().v4(),
-        name = name ?? 'MeshUser-${(id ?? const Uuid().v4()).substring(0, 4)}',
-        emoji = emoji ?? _emojis[DateTime.now().millisecond % _emojis.length],
+        name = name ?? 'User-${(id ?? const Uuid().v4()).substring(0, 4)}',
         createdAt = createdAt ?? DateTime.now().millisecondsSinceEpoch;
 
   factory DeviceIdentity.fromJson(Map<String, dynamic> json) {
     return DeviceIdentity(
       id: json['id'] as String?,
       name: json['name'] as String?,
-      emoji: json['emoji'] as String?,
       createdAt: json['createdAt'] as int?,
     );
   }
 
   Map<String, dynamic> toJson() => {
-        'id': id,
-        'name': name,
-        'emoji': emoji,
-        'createdAt': createdAt,
-      };
+    'id': id,
+    'name': name,
+    'createdAt': createdAt,
+  };
+
+  String get initial => name.isNotEmpty ? name[0].toUpperCase() : '?';
 }

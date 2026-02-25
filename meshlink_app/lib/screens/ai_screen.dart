@@ -20,7 +20,7 @@ class _AIScreenState extends State<AIScreen> {
     super.initState();
     _chat.add({
       'role': 'assistant',
-      'text': 'Hi! I\'m your offline AI assistant. I can help with disaster preparedness, first aid, and emergency procedures.\n\nAsk me anything.',
+      'text': 'I can help with disaster preparedness, first aid, and emergency procedures. Ask me anything.',
     });
   }
 
@@ -41,7 +41,7 @@ class _AIScreenState extends State<AIScreen> {
       _loading = false;
       _chat.add({
         'role': 'assistant',
-        'text': response?['text'] ?? 'Server unavailable. Connect to relay in Settings for AI features.',
+        'text': response?['text'] ?? 'Connect to relay server in Settings for AI features.',
       });
     });
 
@@ -62,46 +62,23 @@ class _AIScreenState extends State<AIScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Header
-          Padding(
-            padding: const EdgeInsets.fromLTRB(24, 20, 24, 0),
-            child: Row(
-              children: [
-                const Icon(Icons.auto_awesome, color: Color(0xFFE53935), size: 28),
-                const SizedBox(width: 12),
-                const Text('AI Assistant', style: TextStyle(fontSize: 28, fontWeight: FontWeight.w700, letterSpacing: -0.5)),
-                const Spacer(),
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-                  decoration: BoxDecoration(
-                    color: const Color(0xFF2A2A2E),
-                    borderRadius: BorderRadius.circular(20),
-                  ),
-                  child: const Text(
-                    'Phase 2',
-                    style: TextStyle(fontSize: 11, fontWeight: FontWeight.w500, color: Color(0xFF5A5A5E)),
-                  ),
-                ),
-              ],
-            ),
+          const Padding(
+            padding: EdgeInsets.fromLTRB(24, 24, 24, 0),
+            child: Text('AI Assistant', style: TextStyle(fontSize: 26, fontWeight: FontWeight.w700, letterSpacing: -0.5)),
           ),
-
-          // Quick actions
           SingleChildScrollView(
             scrollDirection: Axis.horizontal,
-            padding: const EdgeInsets.fromLTRB(24, 20, 24, 8),
+            padding: const EdgeInsets.fromLTRB(24, 16, 24, 8),
             child: Row(
               children: [
-                _chip('🚨 SOS', 'emergency sos help'),
-                _chip('🌍 Earthquake', 'earthquake safety'),
-                _chip('🏥 First Aid', 'first aid'),
-                _chip('🔥 Fire', 'fire escape'),
-                _chip('🌊 Flood', 'flood safety'),
+                _chip('SOS', 'emergency sos help'),
+                _chip('Earthquake', 'earthquake safety tips'),
+                _chip('First Aid', 'first aid basics'),
+                _chip('Fire', 'fire escape plan'),
+                _chip('Flood', 'flood safety'),
               ],
             ),
           ),
-
-          // Chat
           Expanded(
             child: ListView.builder(
               controller: _scrollController,
@@ -113,9 +90,9 @@ class _AIScreenState extends State<AIScreen> {
                     padding: const EdgeInsets.all(16),
                     child: Row(
                       children: [
-                        const SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2, color: Color(0xFFE53935))),
+                        const SizedBox(width: 14, height: 14, child: CircularProgressIndicator(strokeWidth: 1.5, color: Color(0xFFE53935))),
                         const SizedBox(width: 10),
-                        Text('Thinking...', style: TextStyle(color: Colors.white.withValues(alpha: 0.3))),
+                        Text('Thinking...', style: TextStyle(color: Colors.white.withValues(alpha: 0.25))),
                       ],
                     ),
                   );
@@ -131,15 +108,15 @@ class _AIScreenState extends State<AIScreen> {
                     margin: const EdgeInsets.only(bottom: 10),
                     padding: const EdgeInsets.all(14),
                     decoration: BoxDecoration(
-                      color: isUser ? const Color(0xFFE53935) : const Color(0xFF1A1A1E),
-                      borderRadius: BorderRadius.circular(16),
+                      color: isUser ? const Color(0xFFE53935) : const Color(0xFF141418),
+                      borderRadius: BorderRadius.circular(14),
                     ),
                     child: Text(
                       msg['text'] ?? '',
                       style: TextStyle(
                         fontSize: 14,
                         height: 1.5,
-                        color: isUser ? Colors.white : Colors.white.withValues(alpha: 0.85),
+                        color: isUser ? Colors.white : Colors.white.withValues(alpha: 0.8),
                       ),
                     ),
                   ),
@@ -147,23 +124,29 @@ class _AIScreenState extends State<AIScreen> {
               },
             ),
           ),
-
-          // Input
           Container(
             padding: EdgeInsets.fromLTRB(16, 10, 10, 10 + MediaQuery.of(context).padding.bottom),
-            decoration: const BoxDecoration(
-              border: Border(top: BorderSide(color: Color(0xFF1A1A1E))),
-            ),
+            decoration: const BoxDecoration(border: Border(top: BorderSide(color: Color(0xFF141418)))),
             child: Row(
               children: [
                 Expanded(
-                  child: TextField(
-                    controller: _controller,
-                    textInputAction: TextInputAction.send,
-                    onSubmitted: (_) => _send(),
-                    style: const TextStyle(fontSize: 15),
-                    decoration: const InputDecoration(
-                      hintText: 'Ask about disaster survival...',
+                  child: Container(
+                    decoration: BoxDecoration(
+                      color: const Color(0xFF141418),
+                      borderRadius: BorderRadius.circular(24),
+                    ),
+                    child: TextField(
+                      controller: _controller,
+                      textInputAction: TextInputAction.send,
+                      onSubmitted: (_) => _send(),
+                      style: const TextStyle(fontSize: 14),
+                      decoration: InputDecoration(
+                        hintText: 'Ask about survival...',
+                        hintStyle: TextStyle(color: Colors.white.withValues(alpha: 0.2)),
+                        border: InputBorder.none,
+                        filled: false,
+                        contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                      ),
                     ),
                   ),
                 ),
@@ -171,9 +154,9 @@ class _AIScreenState extends State<AIScreen> {
                 GestureDetector(
                   onTap: _send,
                   child: Container(
-                    width: 48, height: 48,
+                    width: 44, height: 44,
                     decoration: const BoxDecoration(color: Color(0xFFE53935), shape: BoxShape.circle),
-                    child: const Icon(Icons.send_rounded, color: Colors.white, size: 22),
+                    child: const Icon(Icons.send_rounded, color: Colors.white, size: 20),
                   ),
                 ),
               ],
@@ -195,11 +178,11 @@ class _AIScreenState extends State<AIScreen> {
         child: Container(
           padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
           decoration: BoxDecoration(
-            color: const Color(0xFF1A1A1E),
+            color: const Color(0xFF141418),
             borderRadius: BorderRadius.circular(20),
-            border: Border.all(color: const Color(0xFF2A2A2E)),
+            border: Border.all(color: const Color(0xFF1E1E22)),
           ),
-          child: Text(label, style: const TextStyle(fontSize: 13, color: Color(0xFF8A8A8E))),
+          child: Text(label, style: const TextStyle(fontSize: 12, color: Color(0xFF6A6A6E))),
         ),
       ),
     );

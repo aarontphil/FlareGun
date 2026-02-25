@@ -14,8 +14,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
   final _serverController = TextEditingController();
   bool _nameSaved = false;
 
-  static const _avatars = ['🧑‍🚀', '🧑‍🚒', '🧑‍⚕️', '🦺', '📡', '🟢', '🔵', '🟣', '🟠', '🔴', '🟡', '⚪', '🎯', '💎', '⚡', '🔥'];
-
   @override
   void initState() {
     super.initState();
@@ -30,30 +28,30 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
     return SafeArea(
       child: SingleChildScrollView(
-        padding: const EdgeInsets.fromLTRB(24, 20, 24, 40),
+        padding: const EdgeInsets.fromLTRB(24, 24, 24, 40),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text('Settings', style: TextStyle(fontSize: 28, fontWeight: FontWeight.w700, letterSpacing: -0.5)),
+            const Text('Settings', style: TextStyle(fontSize: 26, fontWeight: FontWeight.w700, letterSpacing: -0.5)),
             const SizedBox(height: 28),
-
-            // Identity
             _section(
               'Identity',
               Column(
                 children: [
                   Row(
                     children: [
-                      GestureDetector(
-                        onTap: () => _showAvatarPicker(),
-                        child: Container(
-                          width: 60, height: 60,
-                          decoration: BoxDecoration(
-                            shape: BoxShape.circle,
-                            color: const Color(0xFF0D0D0D),
-                            border: Border.all(color: const Color(0xFF2A2A2E), width: 2),
+                      Container(
+                        width: 56, height: 56,
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          color: const Color(0xFF0A0A0A),
+                          border: Border.all(color: const Color(0xFF1E1E22), width: 2),
+                        ),
+                        child: Center(
+                          child: Text(
+                            mesh.identity.initial,
+                            style: const TextStyle(fontSize: 22, fontWeight: FontWeight.w700, color: Color(0xFFE53935)),
                           ),
-                          child: Center(child: Text(mesh.identity.emoji, style: const TextStyle(fontSize: 30))),
                         ),
                       ),
                       const SizedBox(width: 16),
@@ -61,11 +59,11 @@ class _SettingsScreenState extends State<SettingsScreen> {
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            const Text('Tap avatar to change', style: TextStyle(fontSize: 12, color: Color(0xFF5A5A5E))),
-                            const SizedBox(height: 4),
+                            Text(mesh.identity.name, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600)),
+                            const SizedBox(height: 2),
                             Text(
-                              'ID: ${mesh.identity.id.substring(0, 8)}',
-                              style: const TextStyle(fontSize: 11, fontFamily: 'monospace', color: Color(0xFF3A3A3E)),
+                              mesh.identity.id.substring(0, 8),
+                              style: const TextStyle(fontSize: 11, fontFamily: 'monospace', color: Color(0xFF333338)),
                             ),
                           ],
                         ),
@@ -78,12 +76,13 @@ class _SettingsScreenState extends State<SettingsScreen> {
                       Expanded(
                         child: TextField(
                           controller: _nameController,
-                          style: const TextStyle(fontSize: 15),
+                          style: const TextStyle(fontSize: 14),
                           decoration: InputDecoration(
                             hintText: 'Display name',
                             filled: true,
-                            fillColor: const Color(0xFF0D0D0D),
+                            fillColor: const Color(0xFF0A0A0A),
                             border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
+                            contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
                           ),
                         ),
                       ),
@@ -103,8 +102,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
                             borderRadius: BorderRadius.circular(12),
                           ),
                           child: Text(
-                            _nameSaved ? '✓' : 'Save',
-                            style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
+                            _nameSaved ? 'Saved' : 'Save',
+                            style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600),
                           ),
                         ),
                       ),
@@ -113,10 +112,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 ],
               ),
             ),
-
-            // Relay Server (Optional)
             _section(
-              'Relay Server (Optional)',
+              'Relay Server',
               Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
@@ -126,15 +123,15 @@ class _SettingsScreenState extends State<SettingsScreen> {
                         width: 8, height: 8,
                         decoration: BoxDecoration(
                           shape: BoxShape.circle,
-                          color: mesh.wsConnected ? const Color(0xFF4CAF50) : const Color(0xFF5A5A5E),
+                          color: mesh.wsConnected ? const Color(0xFF4CAF50) : const Color(0xFF4A4A4E),
                         ),
                       ),
                       const SizedBox(width: 8),
                       Text(
-                        mesh.wsConnected ? 'Connected to ${mesh.serverUrl}' : 'Not connected',
+                        mesh.wsConnected ? 'Connected' : 'Disconnected',
                         style: TextStyle(
                           fontSize: 13,
-                          color: mesh.wsConnected ? const Color(0xFF4CAF50) : const Color(0xFF5A5A5E),
+                          color: mesh.wsConnected ? const Color(0xFF4CAF50) : const Color(0xFF4A4A4E),
                         ),
                       ),
                     ],
@@ -142,12 +139,13 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   const SizedBox(height: 12),
                   TextField(
                     controller: _serverController,
-                    style: const TextStyle(fontSize: 15),
+                    style: const TextStyle(fontSize: 14),
                     decoration: InputDecoration(
                       hintText: '192.168.1.100:8000',
                       filled: true,
-                      fillColor: const Color(0xFF0D0D0D),
+                      fillColor: const Color(0xFF0A0A0A),
                       border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
+                      contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
                     ),
                   ),
                   const SizedBox(height: 10),
@@ -156,38 +154,34 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     child: ElevatedButton(
                       onPressed: () => mesh.connectRelay(_serverController.text.trim()),
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: const Color(0xFF2A2A2E),
+                        backgroundColor: const Color(0xFF1E1E22),
                         foregroundColor: Colors.white,
                         elevation: 0,
                         padding: const EdgeInsets.symmetric(vertical: 14),
                         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                       ),
-                      child: const Text('Connect', style: TextStyle(fontWeight: FontWeight.w600)),
+                      child: const Text('Connect', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600)),
                     ),
                   ),
                   const SizedBox(height: 8),
                   const Text(
-                    'Relay is optional — mesh works without it via Bluetooth',
-                    style: TextStyle(fontSize: 11, color: Color(0xFF3A3A3E)),
+                    'Optional. Mesh works offline via Bluetooth.',
+                    style: TextStyle(fontSize: 11, color: Color(0xFF333338)),
                   ),
                 ],
               ),
             ),
-
-            // Network Status
             _section(
               'Status',
               Column(
                 children: [
-                  _stat('Mesh Mode', mesh.nearbyActive ? 'Active (BLE)' : 'Inactive'),
-                  _stat('Relay Mode', mesh.wsConnected ? 'Connected' : 'Offline'),
-                  _stat('Connected Peers', '${mesh.peerCount}'),
-                  _stat('Total Messages', '${mesh.broadcastMessages.length}'),
+                  _stat('Mesh', mesh.nearbyActive ? 'Active' : 'Inactive'),
+                  _stat('Relay', mesh.wsConnected ? 'Connected' : 'Off'),
+                  _stat('Peers', '${mesh.peerCount}'),
+                  _stat('Messages', '${mesh.broadcastMessages.length}'),
                 ],
               ),
             ),
-
-            // Danger zone
             _section(
               'Data',
               SizedBox(
@@ -197,9 +191,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     final confirm = await showDialog<bool>(
                       context: context,
                       builder: (ctx) => AlertDialog(
-                        backgroundColor: const Color(0xFF1A1A1E),
-                        title: const Text('Clear all data?'),
-                        content: const Text('This will delete all messages.'),
+                        backgroundColor: const Color(0xFF141418),
+                        title: const Text('Clear all data?', style: TextStyle(fontSize: 16)),
+                        content: const Text('This will delete all messages.', style: TextStyle(fontSize: 14)),
                         actions: [
                           TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Cancel')),
                           TextButton(
@@ -220,19 +214,17 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     padding: const EdgeInsets.symmetric(vertical: 14),
                     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                   ),
-                  child: const Text('Clear All Data', style: TextStyle(fontWeight: FontWeight.w600)),
+                  child: const Text('Clear All Data', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600)),
                 ),
               ),
             ),
-
-            // About
-            const SizedBox(height: 24),
-            Center(
+            const SizedBox(height: 20),
+            const Center(
               child: Column(
                 children: [
-                  const Text('MeshLink', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700, color: Color(0xFF5A5A5E))),
-                  const SizedBox(height: 4),
-                  const Text('v2.0 · Offline Mesh Communication', style: TextStyle(fontSize: 12, color: Color(0xFF3A3A3E))),
+                  Text('FlareGun', style: TextStyle(fontSize: 14, fontWeight: FontWeight.w700, color: Color(0xFF4A4A4E))),
+                  SizedBox(height: 2),
+                  Text('v2.0', style: TextStyle(fontSize: 11, color: Color(0xFF333338))),
                 ],
               ),
             ),
@@ -246,14 +238,17 @@ class _SettingsScreenState extends State<SettingsScreen> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(title, style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w700, color: Color(0xFF5A5A5E), letterSpacing: 0.5)),
+        Text(
+          title.toUpperCase(),
+          style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: Color(0xFF4A4A4E), letterSpacing: 1.2),
+        ),
         const SizedBox(height: 10),
         Container(
           width: double.infinity,
           padding: const EdgeInsets.all(16),
           decoration: BoxDecoration(
-            color: const Color(0xFF1A1A1E),
-            borderRadius: BorderRadius.circular(16),
+            color: const Color(0xFF141418),
+            borderRadius: BorderRadius.circular(14),
           ),
           child: child,
         ),
@@ -264,57 +259,13 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
   Widget _stat(String label, String value) {
     return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 6),
+      padding: const EdgeInsets.symmetric(vertical: 5),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          Text(label, style: const TextStyle(fontSize: 14, color: Color(0xFF8A8A8E))),
-          Text(value, style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w500)),
+          Text(label, style: const TextStyle(fontSize: 13, color: Color(0xFF6A6A6E))),
+          Text(value, style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w500)),
         ],
-      ),
-    );
-  }
-
-  void _showAvatarPicker() {
-    showModalBottomSheet(
-      context: context,
-      backgroundColor: const Color(0xFF1A1A1E),
-      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(24))),
-      builder: (ctx) => Padding(
-        padding: const EdgeInsets.all(24),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Container(width: 40, height: 4, decoration: BoxDecoration(color: const Color(0xFF3A3A3E), borderRadius: BorderRadius.circular(2))),
-            const SizedBox(height: 20),
-            const Text('Choose Avatar', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700)),
-            const SizedBox(height: 20),
-            Wrap(
-              spacing: 12,
-              runSpacing: 12,
-              children: _avatars.map((emoji) => GestureDetector(
-                onTap: () {
-                  context.read<MeshProvider>().setDeviceEmoji(emoji);
-                  Navigator.pop(ctx);
-                },
-                child: Container(
-                  width: 52, height: 52,
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    color: const Color(0xFF0D0D0D),
-                    border: Border.all(
-                      color: emoji == context.read<MeshProvider>().identity.emoji
-                          ? const Color(0xFFE53935) : const Color(0xFF2A2A2E),
-                      width: 2,
-                    ),
-                  ),
-                  child: Center(child: Text(emoji, style: const TextStyle(fontSize: 26))),
-                ),
-              )).toList(),
-            ),
-            const SizedBox(height: 20),
-          ],
-        ),
       ),
     );
   }

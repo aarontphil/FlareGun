@@ -15,111 +15,101 @@ class PeersScreen extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Header
           Padding(
-            padding: const EdgeInsets.fromLTRB(24, 20, 24, 0),
+            padding: const EdgeInsets.fromLTRB(24, 24, 24, 0),
             child: Row(
               children: [
-                const Icon(Icons.radar_rounded, color: Color(0xFFE53935), size: 28),
-                const SizedBox(width: 12),
-                const Text('Discover', style: TextStyle(fontSize: 28, fontWeight: FontWeight.w700, letterSpacing: -0.5)),
+                const Text('Mesh', style: TextStyle(fontSize: 26, fontWeight: FontWeight.w700, letterSpacing: -0.5)),
+                const Spacer(),
+                if (mesh.nearbyActive)
+                  Container(
+                    width: 8, height: 8,
+                    decoration: const BoxDecoration(shape: BoxShape.circle, color: Color(0xFFE53935)),
+                  ),
               ],
             ),
           ),
-
           const SizedBox(height: 24),
-
-          // Start/Stop button
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 24),
             child: SizedBox(
               width: double.infinity,
-              height: 52,
+              height: 50,
               child: ElevatedButton(
                 onPressed: () async {
                   if (mesh.nearbyActive) {
                     await mesh.stopNearby();
                   } else {
-                    await mesh.startNearby();
+                    final started = await mesh.startNearby();
+                    if (!started && context.mounted) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(
+                          content: Text('Bluetooth permissions required. Please enable in Settings.'),
+                          backgroundColor: Color(0xFFE53935),
+                        ),
+                      );
+                    }
                   }
                 },
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: mesh.nearbyActive ? const Color(0xFF1A1A1E) : const Color(0xFFE53935),
+                  backgroundColor: mesh.nearbyActive ? const Color(0xFF141418) : const Color(0xFFE53935),
                   foregroundColor: Colors.white,
                   elevation: 0,
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(14),
-                    side: mesh.nearbyActive
-                        ? const BorderSide(color: Color(0xFFE53935))
-                        : BorderSide.none,
+                    side: mesh.nearbyActive ? const BorderSide(color: Color(0xFFE53935), width: 1.5) : BorderSide.none,
                   ),
                 ),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Icon(mesh.nearbyActive ? Icons.stop_rounded : Icons.play_arrow_rounded, size: 22),
-                    const SizedBox(width: 8),
-                    Text(
-                      mesh.nearbyActive ? 'Stop Mesh' : 'Start Mesh',
-                      style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w600),
-                    ),
-                  ],
+                child: Text(
+                  mesh.nearbyActive ? 'Stop Mesh' : 'Start Mesh',
+                  style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600, letterSpacing: 0.3),
                 ),
               ),
             ),
           ),
-
           if (mesh.nearbyActive)
             Padding(
               padding: const EdgeInsets.fromLTRB(24, 12, 24, 0),
               child: Row(
                 children: [
-                  _pulseDot(),
-                  const SizedBox(width: 8),
-                  const Text(
-                    'Scanning for nearby devices via Bluetooth...',
-                    style: TextStyle(fontSize: 12, color: Color(0xFF5A5A5E)),
+                  SizedBox(
+                    width: 12, height: 12,
+                    child: CircularProgressIndicator(strokeWidth: 1.5, color: Colors.white.withValues(alpha: 0.3)),
                   ),
+                  const SizedBox(width: 10),
+                  const Text('Scanning via Bluetooth', style: TextStyle(fontSize: 12, color: Color(0xFF4A4A4E))),
                 ],
               ),
             ),
-
           const SizedBox(height: 24),
-
-          // Connected peers
           if (connected.isNotEmpty) ...[
-            _sectionHeader('CONNECTED  ·  ${connected.length}'),
+            _sectionHeader('CONNECTED  ${connected.length}'),
             ...connected.map((p) => _peerTile(context, mesh, p, true)),
             const SizedBox(height: 16),
           ],
-
-          // Discovered peers
           if (discovered.isNotEmpty) ...[
-            _sectionHeader('DISCOVERED  ·  ${discovered.length}'),
+            _sectionHeader('NEARBY  ${discovered.length}'),
             ...discovered.map((p) => _peerTile(context, mesh, p, false)),
           ],
-
-          // Empty hint
           if (mesh.peers.isEmpty && mesh.nearbyActive)
             Expanded(
               child: Center(
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    Icon(Icons.bluetooth_searching_rounded, size: 48, color: Colors.white.withValues(alpha: 0.1)),
-                    const SizedBox(height: 16),
-                    const Text('Searching nearby...', style: TextStyle(fontSize: 16, color: Color(0xFF5A5A5E))),
-                    const SizedBox(height: 6),
+                    Icon(Icons.bluetooth_searching_rounded, size: 44, color: Colors.white.withValues(alpha: 0.08)),
+                    const SizedBox(height: 14),
+                    const Text('Searching...', style: TextStyle(fontSize: 15, color: Color(0xFF4A4A4E))),
+                    const SizedBox(height: 4),
                     const Text(
-                      'Make sure other devices also have\nMeshLink running with Mesh started',
+                      'Other devices need FlareGun\nrunning with mesh started',
                       textAlign: TextAlign.center,
-                      style: TextStyle(fontSize: 12, color: Color(0xFF3A3A3E)),
+                      style: TextStyle(fontSize: 12, color: Color(0xFF333338)),
                     ),
                   ],
                 ),
               ),
             ),
-
           if (!mesh.nearbyActive && mesh.peers.isEmpty)
             Expanded(
               child: Center(
@@ -127,21 +117,20 @@ class PeersScreen extends StatelessWidget {
                   mainAxisSize: MainAxisSize.min,
                   children: [
                     Container(
-                      width: 80, height: 80,
+                      width: 72, height: 72,
                       decoration: BoxDecoration(
                         shape: BoxShape.circle,
-                        color: const Color(0xFF1A1A1E),
-                        border: Border.all(color: const Color(0xFF2A2A2E)),
+                        color: const Color(0xFF141418),
                       ),
-                      child: const Icon(Icons.wifi_tethering_rounded, size: 40, color: Color(0xFF3A3A3E)),
+                      child: const Icon(Icons.wifi_tethering_rounded, size: 36, color: Color(0xFF2A2A2E)),
                     ),
-                    const SizedBox(height: 24),
-                    const Text('No internet needed', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w600, color: Color(0xFF8A8A8E))),
-                    const SizedBox(height: 8),
+                    const SizedBox(height: 20),
+                    const Text('No internet needed', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600, color: Color(0xFF6A6A6E))),
+                    const SizedBox(height: 6),
                     const Text(
-                      'Tap "Start Mesh" to discover nearby\ndevices via Bluetooth & WiFi Direct',
+                      'Tap Start Mesh to discover\nnearby devices via Bluetooth',
                       textAlign: TextAlign.center,
-                      style: TextStyle(fontSize: 13, color: Color(0xFF5A5A5E)),
+                      style: TextStyle(fontSize: 13, color: Color(0xFF4A4A4E)),
                     ),
                   ],
                 ),
@@ -157,50 +146,50 @@ class PeersScreen extends StatelessWidget {
       padding: const EdgeInsets.fromLTRB(24, 0, 24, 8),
       child: Text(
         text,
-        style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: Color(0xFF5A5A5E), letterSpacing: 1),
+        style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: Color(0xFF4A4A4E), letterSpacing: 1.2),
       ),
     );
   }
 
-  Widget _peerTile(BuildContext context, MeshProvider mesh, dynamic peer, bool connected) {
+  Widget _peerTile(BuildContext context, MeshProvider mesh, dynamic peer, bool isConnected) {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 3),
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
         decoration: BoxDecoration(
-          color: const Color(0xFF1A1A1E),
+          color: const Color(0xFF141418),
           borderRadius: BorderRadius.circular(14),
-          border: connected ? Border.all(color: const Color(0xFF4CAF50).withValues(alpha: 0.2)) : null,
         ),
         child: Row(
           children: [
             Container(
-              width: 44, height: 44,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                color: const Color(0xFF0D0D0D),
-                border: Border.all(color: const Color(0xFF2A2A2E)),
+              width: 42, height: 42,
+              decoration: const BoxDecoration(shape: BoxShape.circle, color: Color(0xFF0A0A0A)),
+              child: Center(
+                child: Text(
+                  peer.initial,
+                  style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600, color: Color(0xFFE53935)),
+                ),
               ),
-              child: Center(child: Text(peer.emoji, style: const TextStyle(fontSize: 22))),
             ),
             const SizedBox(width: 14),
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(peer.name, style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w600)),
+                  Text(peer.name, style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600)),
                   const SizedBox(height: 2),
                   Text(
-                    connected ? 'Connected via Bluetooth' : 'Available nearby',
+                    isConnected ? 'Connected' : 'Available',
                     style: TextStyle(
                       fontSize: 12,
-                      color: connected ? const Color(0xFF4CAF50) : const Color(0xFF5A5A5E),
+                      color: isConnected ? const Color(0xFF4CAF50) : const Color(0xFF4A4A4E),
                     ),
                   ),
                 ],
               ),
             ),
-            if (!connected)
+            if (!isConnected)
               GestureDetector(
                 onTap: () => mesh.connectToPeer(peer.deviceId),
                 child: Container(
@@ -209,32 +198,16 @@ class PeersScreen extends StatelessWidget {
                     color: const Color(0xFFE53935),
                     borderRadius: BorderRadius.circular(10),
                   ),
-                  child: const Text('Connect', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600)),
+                  child: const Text('Connect', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600)),
                 ),
               ),
-            if (connected)
+            if (isConnected)
               Container(
-                width: 10, height: 10,
-                decoration: const BoxDecoration(
-                  shape: BoxShape.circle,
-                  color: Color(0xFF4CAF50),
-                ),
+                width: 8, height: 8,
+                decoration: const BoxDecoration(shape: BoxShape.circle, color: Color(0xFF4CAF50)),
               ),
           ],
         ),
-      ),
-    );
-  }
-
-  Widget _pulseDot() {
-    return TweenAnimationBuilder<double>(
-      tween: Tween(begin: 0.3, end: 1.0),
-      duration: const Duration(seconds: 1),
-      builder: (_, val, child) => Opacity(opacity: val, child: child),
-      onEnd: () {},
-      child: Container(
-        width: 8, height: 8,
-        decoration: const BoxDecoration(shape: BoxShape.circle, color: Color(0xFFE53935)),
       ),
     );
   }

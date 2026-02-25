@@ -15,34 +15,21 @@ class ChatListScreen extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Header
           Padding(
-            padding: const EdgeInsets.fromLTRB(24, 20, 24, 0),
+            padding: const EdgeInsets.fromLTRB(24, 24, 24, 0),
             child: Row(
               children: [
-                // Avatar
-                Container(
-                  width: 40, height: 40,
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    color: const Color(0xFF1A1A1E),
-                    border: Border.all(color: const Color(0xFF2A2A2E)),
-                  ),
-                  child: Center(child: Text(mesh.identity.emoji, style: const TextStyle(fontSize: 20))),
-                ),
-                const SizedBox(width: 16),
                 const Text(
                   'Chats',
-                  style: TextStyle(fontSize: 28, fontWeight: FontWeight.w700, letterSpacing: -0.5),
+                  style: TextStyle(fontSize: 26, fontWeight: FontWeight.w700, letterSpacing: -0.5),
                 ),
                 const Spacer(),
-                // Status indicator
                 Container(
                   padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
                   decoration: BoxDecoration(
                     color: mesh.nearbyActive || mesh.wsConnected
-                        ? const Color(0xFF1B5E20).withValues(alpha: 0.3)
-                        : const Color(0xFF2A2A2E),
+                        ? const Color(0xFF1B5E20).withValues(alpha: 0.25)
+                        : const Color(0xFF1E1E22),
                     borderRadius: BorderRadius.circular(20),
                   ),
                   child: Row(
@@ -53,17 +40,17 @@ class ChatListScreen extends StatelessWidget {
                         decoration: BoxDecoration(
                           shape: BoxShape.circle,
                           color: mesh.nearbyActive || mesh.wsConnected
-                              ? const Color(0xFF4CAF50) : const Color(0xFF5A5A5E),
+                              ? const Color(0xFF4CAF50) : const Color(0xFF4A4A4E),
                         ),
                       ),
                       const SizedBox(width: 6),
                       Text(
-                        mesh.nearbyActive ? 'Mesh' : mesh.wsConnected ? 'Relay' : 'Offline',
+                        mesh.nearbyActive ? '${mesh.peerCount} peers' : mesh.wsConnected ? 'Relay' : 'Offline',
                         style: TextStyle(
                           fontSize: 11,
                           fontWeight: FontWeight.w500,
                           color: mesh.nearbyActive || mesh.wsConnected
-                              ? const Color(0xFF81C784) : const Color(0xFF5A5A5E),
+                              ? const Color(0xFF81C784) : const Color(0xFF4A4A4E),
                         ),
                       ),
                     ],
@@ -72,35 +59,29 @@ class ChatListScreen extends StatelessWidget {
               ],
             ),
           ),
-
           const SizedBox(height: 20),
-
-          // Search bar
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 24),
             child: Container(
-              height: 44,
+              height: 42,
               decoration: BoxDecoration(
-                color: const Color(0xFF1A1A1E),
-                borderRadius: BorderRadius.circular(14),
+                color: const Color(0xFF141418),
+                borderRadius: BorderRadius.circular(12),
               ),
               child: Row(
                 children: [
                   const SizedBox(width: 14),
-                  Icon(Icons.search_rounded, color: Colors.white.withValues(alpha: 0.3), size: 20),
+                  Icon(Icons.search_rounded, color: Colors.white.withValues(alpha: 0.2), size: 18),
                   const SizedBox(width: 10),
-                  Text('Search', style: TextStyle(color: Colors.white.withValues(alpha: 0.3), fontSize: 15)),
+                  Text('Search', style: TextStyle(color: Colors.white.withValues(alpha: 0.2), fontSize: 14)),
                 ],
               ),
             ),
           ),
-
-          const SizedBox(height: 16),
-
-          // Chat list
+          const SizedBox(height: 12),
           Expanded(
             child: connected.isEmpty
-                ? _emptyState(context, mesh)
+                ? _emptyState(mesh)
                 : ListView.builder(
                     padding: const EdgeInsets.symmetric(horizontal: 12),
                     itemCount: connected.length,
@@ -108,7 +89,6 @@ class ChatListScreen extends StatelessWidget {
                       final peer = connected[index];
                       final lastMsg = mesh.lastMessage(peer.deviceId);
                       final unread = mesh.unreadCount(peer.deviceId);
-
                       return _chatTile(context, peer, lastMsg, unread);
                     },
                   ),
@@ -122,34 +102,35 @@ class ChatListScreen extends StatelessWidget {
     return InkWell(
       onTap: () {
         Navigator.of(context).push(MaterialPageRoute(
-          builder: (_) => ChatScreen(peerId: peer.deviceId, peerName: peer.name, peerEmoji: peer.emoji),
+          builder: (_) => ChatScreen(peerId: peer.deviceId, peerName: peer.name),
         ));
       },
-      borderRadius: BorderRadius.circular(16),
+      borderRadius: BorderRadius.circular(14),
       child: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
         child: Row(
           children: [
-            // Avatar
             Container(
-              width: 52, height: 52,
+              width: 48, height: 48,
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
-                color: const Color(0xFF1A1A1E),
-                border: Border.all(color: const Color(0xFF2A2A2E)),
+                color: const Color(0xFF1E1E22),
               ),
-              child: Center(child: Text(peer.emoji, style: const TextStyle(fontSize: 26))),
+              child: Center(
+                child: Text(
+                  peer.initial,
+                  style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w600, color: Color(0xFFE53935)),
+                ),
+              ),
             ),
             const SizedBox(width: 14),
-
-            // Name + message preview
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
                     peer.name,
-                    style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+                    style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w600),
                     maxLines: 1, overflow: TextOverflow.ellipsis,
                   ),
                   const SizedBox(height: 3),
@@ -157,22 +138,20 @@ class ChatListScreen extends StatelessWidget {
                     lastMsg?.text ?? 'Tap to start chatting',
                     style: TextStyle(
                       fontSize: 13,
-                      color: Colors.white.withValues(alpha: lastMsg != null ? 0.5 : 0.25),
+                      color: Colors.white.withValues(alpha: lastMsg != null ? 0.4 : 0.2),
                     ),
                     maxLines: 1, overflow: TextOverflow.ellipsis,
                   ),
                 ],
               ),
             ),
-
-            // Time + unread
             Column(
               crossAxisAlignment: CrossAxisAlignment.end,
               children: [
                 if (lastMsg != null)
                   Text(
                     _formatTime(lastMsg.timestamp),
-                    style: TextStyle(fontSize: 12, color: Colors.white.withValues(alpha: 0.3)),
+                    style: TextStyle(fontSize: 11, color: Colors.white.withValues(alpha: 0.25)),
                   ),
                 if (unread > 0) ...[
                   const SizedBox(height: 6),
@@ -184,7 +163,7 @@ class ChatListScreen extends StatelessWidget {
                     ),
                     child: Text(
                       unread > 99 ? '99+' : '$unread',
-                      style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: Colors.white),
+                      style: const TextStyle(fontSize: 10, fontWeight: FontWeight.w700, color: Colors.white),
                     ),
                   ),
                 ],
@@ -196,34 +175,33 @@ class ChatListScreen extends StatelessWidget {
     );
   }
 
-  Widget _emptyState(BuildContext context, MeshProvider mesh) {
+  Widget _emptyState(MeshProvider mesh) {
     return Center(
       child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 40),
+        padding: const EdgeInsets.symmetric(horizontal: 48),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
             Container(
-              width: 80, height: 80,
+              width: 72, height: 72,
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
-                color: const Color(0xFF1A1A1E),
-                border: Border.all(color: const Color(0xFF2A2A2E)),
+                color: const Color(0xFF141418),
               ),
-              child: const Icon(Icons.chat_bubble_outline_rounded, size: 36, color: Color(0xFF3A3A3E)),
+              child: const Icon(Icons.chat_bubble_outline_rounded, size: 32, color: Color(0xFF2A2A2E)),
             ),
-            const SizedBox(height: 24),
+            const SizedBox(height: 20),
             const Text(
-              'No conversations yet',
-              style: TextStyle(fontSize: 18, fontWeight: FontWeight.w600, color: Color(0xFF8A8A8E)),
+              'No conversations',
+              style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600, color: Color(0xFF6A6A6E)),
             ),
-            const SizedBox(height: 8),
+            const SizedBox(height: 6),
             Text(
               mesh.nearbyActive
-                  ? 'Waiting for peers to connect...'
-                  : 'Go to Discover to find nearby devices',
+                  ? 'Waiting for peers...'
+                  : 'Start mesh from the Mesh tab',
               textAlign: TextAlign.center,
-              style: const TextStyle(fontSize: 13, color: Color(0xFF5A5A5E)),
+              style: const TextStyle(fontSize: 13, color: Color(0xFF4A4A4E)),
             ),
           ],
         ),

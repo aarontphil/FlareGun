@@ -13,7 +13,7 @@ void main() async {
     const SystemUiOverlayStyle(
       statusBarColor: Colors.transparent,
       statusBarIconBrightness: Brightness.light,
-      systemNavigationBarColor: Color(0xFF0D0D0D),
+      systemNavigationBarColor: Color(0xFF0A0A0A),
     ),
   );
 
@@ -23,56 +23,46 @@ void main() async {
   runApp(
     ChangeNotifierProvider.value(
       value: mesh,
-      child: const MeshLinkApp(),
+      child: const FlareGunApp(),
     ),
   );
 }
 
-class MeshLinkApp extends StatelessWidget {
-  const MeshLinkApp({super.key});
+class FlareGunApp extends StatelessWidget {
+  const FlareGunApp({super.key});
 
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'MeshLink',
+      title: 'FlareGun',
       debugShowCheckedModeBanner: false,
       theme: ThemeData(
         brightness: Brightness.dark,
-        scaffoldBackgroundColor: const Color(0xFF0D0D0D),
+        scaffoldBackgroundColor: const Color(0xFF0A0A0A),
+        fontFamily: 'sans-serif',
         colorScheme: const ColorScheme.dark(
           primary: Color(0xFFE53935),
           secondary: Color(0xFFFF5252),
-          surface: Color(0xFF1A1A1E),
-          error: Color(0xFFFF1744),
+          surface: Color(0xFF141418),
         ),
         appBarTheme: const AppBarTheme(
-          backgroundColor: Color(0xFF0D0D0D),
+          backgroundColor: Color(0xFF0A0A0A),
           elevation: 0,
           surfaceTintColor: Colors.transparent,
         ),
         cardTheme: CardThemeData(
-          color: const Color(0xFF1A1A1E),
+          color: const Color(0xFF141418),
           elevation: 0,
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
         ),
         bottomNavigationBarTheme: const BottomNavigationBarThemeData(
-          backgroundColor: Color(0xFF0D0D0D),
+          backgroundColor: Color(0xFF0A0A0A),
           selectedItemColor: Color(0xFFE53935),
-          unselectedItemColor: Color(0xFF5A5A5E),
+          unselectedItemColor: Color(0xFF4A4A4E),
           type: BottomNavigationBarType.fixed,
           showUnselectedLabels: true,
-          selectedLabelStyle: TextStyle(fontSize: 11, fontWeight: FontWeight.w600),
-          unselectedLabelStyle: TextStyle(fontSize: 11),
-        ),
-        inputDecorationTheme: InputDecorationTheme(
-          filled: true,
-          fillColor: const Color(0xFF1A1A1E),
-          border: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(24),
-            borderSide: BorderSide.none,
-          ),
-          contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
-          hintStyle: TextStyle(color: Colors.white.withValues(alpha: 0.3)),
+          selectedLabelStyle: TextStyle(fontSize: 10, fontWeight: FontWeight.w600, letterSpacing: 0.3),
+          unselectedLabelStyle: TextStyle(fontSize: 10, letterSpacing: 0.3),
         ),
         useMaterial3: true,
       ),
@@ -106,10 +96,10 @@ class _HomeScreenState extends State<HomeScreen> {
         currentIndex: _index,
         onTap: (i) => setState(() => _index = i),
         items: const [
-          BottomNavigationBarItem(icon: Icon(Icons.chat_bubble_rounded), label: 'Chats'),
-          BottomNavigationBarItem(icon: Icon(Icons.radar_rounded), label: 'Discover'),
-          BottomNavigationBarItem(icon: Icon(Icons.auto_awesome), label: 'AI'),
-          BottomNavigationBarItem(icon: Icon(Icons.settings_rounded), label: 'Settings'),
+          BottomNavigationBarItem(icon: Icon(Icons.chat_bubble_rounded, size: 22), label: 'Chats'),
+          BottomNavigationBarItem(icon: Icon(Icons.radar_rounded, size: 22), label: 'Mesh'),
+          BottomNavigationBarItem(icon: Icon(Icons.auto_awesome, size: 22), label: 'AI'),
+          BottomNavigationBarItem(icon: Icon(Icons.tune_rounded, size: 22), label: 'Settings'),
         ],
       ),
     );
