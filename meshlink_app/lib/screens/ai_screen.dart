@@ -13,36 +13,30 @@ class _AIScreenState extends State<AIScreen> {
   final _controller = TextEditingController();
   final _scrollController = ScrollController();
   final List<Map<String, String>> _chat = [];
-  bool _loading = false;
 
   @override
   void initState() {
     super.initState();
     _chat.add({
       'role': 'assistant',
-      'text': 'I can help with disaster preparedness, first aid, and emergency procedures. Ask me anything.',
+      'text': 'I am your offline AI assistant. I run entirely on your device — no server or internet needed.\n\nAsk me about disaster survival, first aid, or emergency procedures.',
     });
   }
 
-  Future<void> _send() async {
+  void _send() {
     final text = _controller.text.trim();
-    if (text.isEmpty || _loading) return;
+    if (text.isEmpty) return;
 
     setState(() {
       _chat.add({'role': 'user', 'text': text});
-      _loading = true;
     });
     _controller.clear();
 
     final mesh = context.read<MeshProvider>();
-    final response = await mesh.aiChat(text);
+    final response = mesh.aiChat(text);
 
     setState(() {
-      _loading = false;
-      _chat.add({
-        'role': 'assistant',
-        'text': response?['text'] ?? 'Connect to relay server in Settings for AI features.',
-      });
+      _chat.add({'role': 'assistant', 'text': response});
     });
 
     Future.delayed(const Duration(milliseconds: 100), () {
@@ -62,9 +56,29 @@ class _AIScreenState extends State<AIScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Padding(
-            padding: EdgeInsets.fromLTRB(24, 24, 24, 0),
-            child: Text('AI Assistant', style: TextStyle(fontSize: 26, fontWeight: FontWeight.w700, letterSpacing: -0.5)),
+          Padding(
+            padding: const EdgeInsets.fromLTRB(24, 24, 24, 0),
+            child: Row(
+              children: [
+                const Text('AI Assistant', style: TextStyle(fontSize: 26, fontWeight: FontWeight.w700, letterSpacing: -0.5)),
+                const Spacer(),
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFF1B5E20).withValues(alpha: 0.25),
+                    borderRadius: BorderRadius.circular(20),
+                  ),
+                  child: const Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(Icons.offline_bolt_rounded, size: 12, color: Color(0xFF4CAF50)),
+                      SizedBox(width: 4),
+                      Text('On-device', style: TextStyle(fontSize: 11, fontWeight: FontWeight.w500, color: Color(0xFF81C784))),
+                    ],
+                  ),
+                ),
+              ],
+            ),
           ),
           SingleChildScrollView(
             scrollDirection: Axis.horizontal,
@@ -76,6 +90,8 @@ class _AIScreenState extends State<AIScreen> {
                 _chip('First Aid', 'first aid basics'),
                 _chip('Fire', 'fire escape plan'),
                 _chip('Flood', 'flood safety'),
+                _chip('CPR', 'cpr guide'),
+                _chip('Shelter', 'emergency shelter'),
               ],
             ),
           ),
@@ -83,21 +99,8 @@ class _AIScreenState extends State<AIScreen> {
             child: ListView.builder(
               controller: _scrollController,
               padding: const EdgeInsets.all(16),
-              itemCount: _chat.length + (_loading ? 1 : 0),
+              itemCount: _chat.length,
               itemBuilder: (context, index) {
-                if (index == _chat.length && _loading) {
-                  return Padding(
-                    padding: const EdgeInsets.all(16),
-                    child: Row(
-                      children: [
-                        const SizedBox(width: 14, height: 14, child: CircularProgressIndicator(strokeWidth: 1.5, color: Color(0xFFE53935))),
-                        const SizedBox(width: 10),
-                        Text('Thinking...', style: TextStyle(color: Colors.white.withValues(alpha: 0.25))),
-                      ],
-                    ),
-                  );
-                }
-
                 final msg = _chat[index];
                 final isUser = msg['role'] == 'user';
 

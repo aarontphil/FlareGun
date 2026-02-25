@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:convert';
+import 'dart:collection';
 import 'package:flutter/foundation.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 import 'package:http/http.dart' as http;
@@ -7,6 +8,7 @@ import 'package:web_socket_channel/web_socket_channel.dart';
 import '../models/message.dart';
 import '../models/peer.dart';
 import '../models/identity.dart';
+import '../ai/offline_ai.dart';
 import 'nearby_service.dart';
 
 class MeshProvider extends ChangeNotifier {
@@ -32,6 +34,9 @@ class MeshProvider extends ChangeNotifier {
   final Map<String, List<MeshMessage>> _conversations = {};
   final List<MeshMessage> _broadcastMessages = [];
   List<MeshMessage> get broadcastMessages => List.unmodifiable(_broadcastMessages);
+
+  final LinkedHashSet<String> _seenMessageIds = LinkedHashSet();
+  static const int _maxSeenSize = 500;
 
   List<MeshMessage> getConversation(String peerId) {
     return List.unmodifiable(_conversations[peerId] ?? []);
@@ -117,10 +122,26 @@ class MeshProvider extends ChangeNotifier {
     await nearby.connectTo(endpointId);
   }
 
+  bool _hasSeen(String msgId) {
+    return _seenMessageIds.contains(msgId);
+  }
+
+  void _markSeen(String msgId) {
+    _seenMessageIds.add(msgId);
+    while (_seenMessageIds.length > _maxSeenSize) {
+      _seenMessageIds.remove(_seenMessageIds.first);
+    }
+  }
+
   void _handleNearbyMessage(String endpointId, String raw) {
     try {
       final data = jsonDecode(raw) as Map<String, dynamic>;
       final msg = MeshMessage.fromJson(data);
+
+      if (_hasSeen(msg.id)) return;
+      _markSeen(msg.id);
+
+      if (msg.senderId == _identity.id) return;
 
       _conversations.putIfAbsent(endpointId, () => []);
       if (!_conversations[endpointId]!.any((m) => m.id == msg.id)) {
@@ -134,9 +155,23 @@ class MeshProvider extends ChangeNotifier {
         _broadcastMessages.sort((a, b) => a.timestamp.compareTo(b.timestamp));
       }
 
+      if (msg.canForward) {
+        _forwardToOthers(endpointId, msg);
+      }
+
       notifyListeners();
     } catch (e) {
       debugPrint('[Mesh] Parse error: $e');
+    }
+  }
+
+  void _forwardToOthers(String sourceEndpointId, MeshMessage msg) {
+    final forwarded = msg.forwarded();
+    final payload = jsonEncode(forwarded.toJson());
+
+    for (final peerId in nearby.connectedEndpoints.keys) {
+      if (peerId == sourceEndpointId) continue;
+      nearby.sendMessage(peerId, payload);
     }
   }
 
@@ -147,9 +182,10 @@ class MeshProvider extends ChangeNotifier {
       text: text.trim(),
       senderId: _identity.id,
       senderName: _identity.name,
-      senderEmoji: '',
       priority: priority,
     );
+
+    _markSeen(msg.id);
 
     _conversations.putIfAbsent(peerId, () => []);
     _conversations[peerId]!.add(msg);
@@ -158,6 +194,11 @@ class MeshProvider extends ChangeNotifier {
 
     if (nearby.connectedEndpoints.containsKey(peerId)) {
       await nearby.sendMessage(peerId, jsonEncode(msg.toJson()));
+    }
+
+    for (final otherId in nearby.connectedEndpoints.keys) {
+      if (otherId == peerId) continue;
+      await nearby.sendMessage(otherId, jsonEncode(msg.toJson()));
     }
 
     if (_wsConnected && _channel != null) {
@@ -172,10 +213,10 @@ class MeshProvider extends ChangeNotifier {
       text: text.trim(),
       senderId: _identity.id,
       senderName: _identity.name,
-      senderEmoji: '',
       priority: priority,
     );
 
+    _markSeen(msg.id);
     _broadcastMessages.add(msg);
     notifyListeners();
 
@@ -184,6 +225,10 @@ class MeshProvider extends ChangeNotifier {
     if (_wsConnected && _channel != null) {
       _channel!.sink.add(jsonEncode({'type': 'message', 'message': msg.toJson()}));
     }
+  }
+
+  String aiChat(String query) {
+    return OfflineAI.chat(query);
   }
 
   Future<void> connectRelay(String serverHost) async {
@@ -240,10 +285,13 @@ class MeshProvider extends ChangeNotifier {
           break;
         case 'message':
           final msg = MeshMessage.fromJson(Map<String, dynamic>.from(data['message']));
-          if (!_broadcastMessages.any((m) => m.id == msg.id)) {
-            _broadcastMessages.add(msg);
-            _broadcastMessages.sort((a, b) => a.timestamp.compareTo(b.timestamp));
-            notifyListeners();
+          if (!_hasSeen(msg.id)) {
+            _markSeen(msg.id);
+            if (!_broadcastMessages.any((m) => m.id == msg.id)) {
+              _broadcastMessages.add(msg);
+              _broadcastMessages.sort((a, b) => a.timestamp.compareTo(b.timestamp));
+              notifyListeners();
+            }
           }
           break;
       }
@@ -260,19 +308,6 @@ class MeshProvider extends ChangeNotifier {
     notifyListeners();
   }
 
-  Future<Map<String, dynamic>?> aiChat(String query) async {
-    if (_serverUrl.isEmpty) return null;
-    try {
-      final res = await http.post(
-        Uri.parse('http://$_serverUrl/ai/chat'),
-        headers: {'Content-Type': 'application/json'},
-        body: jsonEncode({'query': query}),
-      );
-      if (res.statusCode == 200) return jsonDecode(res.body);
-    } catch (_) {}
-    return null;
-  }
-
   Future<void> setDeviceName(String name) async {
     _identity.name = name;
     await _identityBox.put('device', _identity.toJson());
@@ -287,6 +322,7 @@ class MeshProvider extends ChangeNotifier {
           final data = Map<String, dynamic>.from(raw);
           final peerId = data['_peerId'] as String? ?? '_broadcast';
           final msg = MeshMessage.fromJson(data);
+          _markSeen(msg.id);
           if (peerId == '_broadcast') {
             _broadcastMessages.add(msg);
           } else {
@@ -311,6 +347,7 @@ class MeshProvider extends ChangeNotifier {
   Future<void> clearData() async {
     _broadcastMessages.clear();
     _conversations.clear();
+    _seenMessageIds.clear();
     await _messagesBox.clear();
     notifyListeners();
   }
