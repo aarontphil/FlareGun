@@ -1,5 +1,7 @@
 import 'package:uuid/uuid.dart';
 
+enum MessageStatus { sending, sent, delivered, read }
+
 class MeshMessage {
   final String id;
   final String text;
@@ -11,6 +13,8 @@ class MeshMessage {
   final int ttl;
   final int hopCount;
   final String originId;
+  final String msgType;
+  MessageStatus status;
   final Map<String, dynamic>? aiAnalysis;
 
   MeshMessage({
@@ -24,6 +28,8 @@ class MeshMessage {
     this.ttl = 7,
     this.hopCount = 0,
     String? originId,
+    this.msgType = 'message',
+    this.status = MessageStatus.sending,
     this.aiAnalysis,
   })  : id = id ?? const Uuid().v4(),
         timestamp = timestamp ?? DateTime.now().millisecondsSinceEpoch,
@@ -41,6 +47,8 @@ class MeshMessage {
       ttl: json['ttl'] as int? ?? 7,
       hopCount: json['hopCount'] as int? ?? 0,
       originId: json['originId'] as String?,
+      msgType: json['msgType'] as String? ?? 'message',
+      status: _parseStatus(json['status'] as String?),
       aiAnalysis: json['aiAnalysis'] as Map<String, dynamic>?,
     );
   }
@@ -56,6 +64,8 @@ class MeshMessage {
     'ttl': ttl,
     'hopCount': hopCount,
     'originId': originId,
+    'msgType': msgType,
+    'status': status.name,
     if (aiAnalysis != null) 'aiAnalysis': aiAnalysis,
   };
 
@@ -71,11 +81,32 @@ class MeshMessage {
       ttl: ttl - 1,
       hopCount: hopCount + 1,
       originId: originId,
+      msgType: msgType,
+      status: status,
       aiAnalysis: aiAnalysis,
     );
   }
 
-  bool get canForward => ttl > 0;
+  static MeshMessage receipt(String originalMsgId, String senderId, String senderName) {
+    return MeshMessage(
+      text: originalMsgId,
+      senderId: senderId,
+      senderName: senderName,
+      msgType: 'receipt',
+      ttl: 7,
+    );
+  }
 
+  bool get isReceipt => msgType == 'receipt';
+  bool get canForward => ttl > 0;
   String get senderInitial => senderName.isNotEmpty ? senderName[0].toUpperCase() : '?';
+
+  static MessageStatus _parseStatus(String? s) {
+    switch (s) {
+      case 'sent': return MessageStatus.sent;
+      case 'delivered': return MessageStatus.delivered;
+      case 'read': return MessageStatus.read;
+      default: return MessageStatus.sending;
+    }
+  }
 }

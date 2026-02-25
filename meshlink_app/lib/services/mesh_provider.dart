@@ -143,6 +143,11 @@ class MeshProvider extends ChangeNotifier {
 
       if (msg.senderId == _identity.id) return;
 
+      if (msg.isReceipt) {
+        _handleReceipt(msg, endpointId);
+        return;
+      }
+
       final conversationKey = msg.senderId;
 
       if (!_peers.containsKey(conversationKey)) {
@@ -152,6 +157,8 @@ class MeshProvider extends ChangeNotifier {
           connected: true,
         );
       }
+
+      msg.status = MessageStatus.delivered;
 
       _conversations.putIfAbsent(conversationKey, () => []);
       if (!_conversations[conversationKey]!.any((m) => m.id == msg.id)) {
@@ -165,6 +172,8 @@ class MeshProvider extends ChangeNotifier {
         _broadcastMessages.sort((a, b) => a.timestamp.compareTo(b.timestamp));
       }
 
+      _sendReceipt(msg.id, endpointId);
+
       if (msg.canForward) {
         _forwardToOthers(endpointId, msg);
       }
@@ -172,6 +181,44 @@ class MeshProvider extends ChangeNotifier {
       notifyListeners();
     } catch (e) {
       debugPrint('[Mesh] Parse error: $e');
+    }
+  }
+
+  void _handleReceipt(MeshMessage receipt, String endpointId) {
+    final originalMsgId = receipt.text;
+
+    for (final conv in _conversations.values) {
+      for (final msg in conv) {
+        if (msg.id == originalMsgId && msg.senderId == _identity.id) {
+          msg.status = MessageStatus.delivered;
+          _persistMessage(_getConversationKeyForMsg(msg), msg);
+          notifyListeners();
+          break;
+        }
+      }
+    }
+
+    if (receipt.canForward) {
+      _forwardToOthers(endpointId, receipt);
+    }
+  }
+
+  String _getConversationKeyForMsg(MeshMessage msg) {
+    for (final entry in _conversations.entries) {
+      if (entry.value.any((m) => m.id == msg.id)) {
+        return entry.key;
+      }
+    }
+    return msg.senderId;
+  }
+
+  void _sendReceipt(String originalMsgId, String endpointId) {
+    final receipt = MeshMessage.receipt(originalMsgId, _identity.id, _identity.name);
+    _markSeen(receipt.id);
+    final payload = jsonEncode(receipt.toJson());
+
+    for (final peerId in nearby.connectedEndpoints.keys) {
+      nearby.sendMessage(peerId, payload);
     }
   }
 
@@ -193,6 +240,7 @@ class MeshProvider extends ChangeNotifier {
       senderId: _identity.id,
       senderName: _identity.name,
       priority: priority,
+      status: MessageStatus.sending,
     );
 
     _markSeen(msg.id);
@@ -203,18 +251,28 @@ class MeshProvider extends ChangeNotifier {
     notifyListeners();
 
     final payload = jsonEncode(msg.toJson());
+    bool dispatched = false;
 
     if (nearby.connectedEndpoints.containsKey(peerId)) {
       await nearby.sendMessage(peerId, payload);
+      dispatched = true;
     }
 
     for (final otherId in nearby.connectedEndpoints.keys) {
       if (otherId == peerId) continue;
       await nearby.sendMessage(otherId, payload);
+      dispatched = true;
     }
 
     if (_wsConnected && _channel != null) {
       _channel!.sink.add(jsonEncode({'type': 'message', 'message': msg.toJson()}));
+      dispatched = true;
+    }
+
+    if (dispatched) {
+      msg.status = MessageStatus.sent;
+      await _persistMessage(peerId, msg);
+      notifyListeners();
     }
   }
 

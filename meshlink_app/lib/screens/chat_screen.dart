@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import '../models/message.dart';
 import '../services/mesh_provider.dart';
 
 class ChatScreen extends StatefulWidget {
@@ -135,14 +136,23 @@ class _ChatScreenState extends State<ChatScreen> {
                                     ),
                                   ),
                                   const SizedBox(height: 4),
-                                  Text(
-                                    _formatTime(msg.timestamp),
-                                    style: TextStyle(
-                                      fontSize: 10,
-                                      color: isOwn
-                                          ? Colors.white.withValues(alpha: 0.5)
-                                          : Colors.white.withValues(alpha: 0.2),
-                                    ),
+                                  Row(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      Text(
+                                        _formatTime(msg.timestamp),
+                                        style: TextStyle(
+                                          fontSize: 10,
+                                          color: isOwn
+                                              ? Colors.white.withValues(alpha: 0.5)
+                                              : Colors.white.withValues(alpha: 0.2),
+                                        ),
+                                      ),
+                                      if (isOwn) ...[
+                                        const SizedBox(width: 4),
+                                        _statusIcon(msg.status, isOwn),
+                                      ],
+                                    ],
                                   ),
                                 ],
                               ),
@@ -196,6 +206,19 @@ class _ChatScreenState extends State<ChatScreen> {
         ],
       ),
     );
+  }
+
+  Widget _statusIcon(MessageStatus status, bool isOwn) {
+    final color = isOwn ? Colors.white.withValues(alpha: 0.6) : Colors.white.withValues(alpha: 0.3);
+    switch (status) {
+      case MessageStatus.sending:
+        return Icon(Icons.access_time_rounded, size: 12, color: color);
+      case MessageStatus.sent:
+        return Icon(Icons.check_rounded, size: 12, color: color);
+      case MessageStatus.delivered:
+      case MessageStatus.read:
+        return Icon(Icons.done_all_rounded, size: 12, color: color);
+    }
   }
 
   Widget _dateHeader(int ts) {
