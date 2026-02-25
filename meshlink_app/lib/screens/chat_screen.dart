@@ -209,16 +209,19 @@ class _ChatScreenState extends State<ChatScreen> {
   }
 
   Widget _statusIcon(MessageStatus status, bool isOwn) {
-    final color = isOwn ? Colors.white.withValues(alpha: 0.6) : Colors.white.withValues(alpha: 0.3);
+    final color = isOwn ? Colors.white.withValues(alpha: 0.5) : Colors.white.withValues(alpha: 0.3);
+    String label;
     switch (status) {
       case MessageStatus.sending:
-        return Icon(Icons.access_time_rounded, size: 12, color: color);
+        label = 'Sending';
       case MessageStatus.sent:
-        return Icon(Icons.check_rounded, size: 12, color: color);
+        label = 'Sent';
       case MessageStatus.delivered:
+        label = 'Delivered';
       case MessageStatus.read:
-        return Icon(Icons.done_all_rounded, size: 12, color: color);
+        label = 'Read';
     }
+    return Text(label, style: TextStyle(fontSize: 9, color: color));
   }
 
   Widget _dateHeader(int ts) {
