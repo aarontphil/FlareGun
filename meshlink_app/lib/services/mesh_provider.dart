@@ -143,11 +143,21 @@ class MeshProvider extends ChangeNotifier {
 
       if (msg.senderId == _identity.id) return;
 
-      _conversations.putIfAbsent(endpointId, () => []);
-      if (!_conversations[endpointId]!.any((m) => m.id == msg.id)) {
-        _conversations[endpointId]!.add(msg);
-        _conversations[endpointId]!.sort((a, b) => a.timestamp.compareTo(b.timestamp));
-        _persistMessage(endpointId, msg);
+      final conversationKey = msg.senderId;
+
+      if (!_peers.containsKey(conversationKey)) {
+        _peers[conversationKey] = Peer(
+          deviceId: conversationKey,
+          name: msg.senderName,
+          connected: true,
+        );
+      }
+
+      _conversations.putIfAbsent(conversationKey, () => []);
+      if (!_conversations[conversationKey]!.any((m) => m.id == msg.id)) {
+        _conversations[conversationKey]!.add(msg);
+        _conversations[conversationKey]!.sort((a, b) => a.timestamp.compareTo(b.timestamp));
+        _persistMessage(conversationKey, msg);
       }
 
       if (!_broadcastMessages.any((m) => m.id == msg.id)) {
@@ -192,13 +202,15 @@ class MeshProvider extends ChangeNotifier {
     await _persistMessage(peerId, msg);
     notifyListeners();
 
+    final payload = jsonEncode(msg.toJson());
+
     if (nearby.connectedEndpoints.containsKey(peerId)) {
-      await nearby.sendMessage(peerId, jsonEncode(msg.toJson()));
+      await nearby.sendMessage(peerId, payload);
     }
 
     for (final otherId in nearby.connectedEndpoints.keys) {
       if (otherId == peerId) continue;
-      await nearby.sendMessage(otherId, jsonEncode(msg.toJson()));
+      await nearby.sendMessage(otherId, payload);
     }
 
     if (_wsConnected && _channel != null) {

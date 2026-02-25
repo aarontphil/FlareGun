@@ -9,7 +9,7 @@ class ChatListScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final mesh = context.watch<MeshProvider>();
-    final connected = mesh.connectedPeers;
+    final allPeers = mesh.peers.where((p) => p.deviceId != mesh.identity.id).toList();
 
     return SafeArea(
       child: Column(
@@ -80,13 +80,13 @@ class ChatListScreen extends StatelessWidget {
           ),
           const SizedBox(height: 12),
           Expanded(
-            child: connected.isEmpty
+            child: allPeers.isEmpty
                 ? _emptyState(mesh)
                 : ListView.builder(
                     padding: const EdgeInsets.symmetric(horizontal: 12),
-                    itemCount: connected.length,
+                    itemCount: allPeers.length,
                     itemBuilder: (context, index) {
-                      final peer = connected[index];
+                      final peer = allPeers[index];
                       final lastMsg = mesh.lastMessage(peer.deviceId);
                       final unread = mesh.unreadCount(peer.deviceId);
                       return _chatTile(context, peer, lastMsg, unread);
