@@ -46,8 +46,8 @@ class NearbyService {
     return bluetoothOk && locationOk;
   }
 
-  Future<bool> start(String userName) async {
-    _userName = userName;
+  Future<bool> start(String userName, String deviceId) async {
+    _userName = '$deviceId|$userName';
     final granted = await requestPermissions();
     if (!granted) {
       debugPrint('[Nearby] Permissions denied');

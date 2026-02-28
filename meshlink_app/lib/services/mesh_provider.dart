@@ -78,25 +78,41 @@ class MeshProvider extends ChangeNotifier {
     notifyListeners();
   }
 
+  final Map<String, String> _endpointToDevice = {};
+
   void _setupNearbyCallbacks() {
-    nearby.onPeerFound = (id, name) {
-      _peers[id] = Peer(deviceId: id, name: name, connected: false);
+    nearby.onPeerFound = (endpointId, nameInfo) {
+      final parts = nameInfo.split('|');
+      final deviceId = parts.length > 1 ? parts[0] : endpointId;
+      final name = parts.length > 1 ? parts.sublist(1).join('|') : nameInfo;
+
+      _endpointToDevice[endpointId] = deviceId;
+      _peers[deviceId] = Peer(deviceId: deviceId, name: name, connected: false);
       notifyListeners();
     };
-    nearby.onPeerLost = (id, _) {
-      _peers.remove(id);
-      notifyListeners();
-    };
-    nearby.onPeerConnected = (id, name) {
-      _peers[id] = Peer(deviceId: id, name: name, connected: true);
-      if (!_conversations.containsKey(id)) {
-        _conversations[id] = [];
+    nearby.onPeerLost = (endpointId, _) {
+      final deviceId = _endpointToDevice[endpointId];
+      if (deviceId != null && _peers.containsKey(deviceId)) {
+        _peers.remove(deviceId);
       }
       notifyListeners();
     };
-    nearby.onPeerDisconnected = (id, _) {
-      if (_peers.containsKey(id)) {
-        _peers[id] = _peers[id]!.copyWith(connected: false);
+    nearby.onPeerConnected = (endpointId, nameInfo) {
+      final parts = nameInfo.split('|');
+      final deviceId = parts.length > 1 ? parts[0] : endpointId;
+      final name = parts.length > 1 ? parts.sublist(1).join('|') : nameInfo;
+
+      _endpointToDevice[endpointId] = deviceId;
+      _peers[deviceId] = Peer(deviceId: deviceId, name: name, connected: true);
+      if (!_conversations.containsKey(deviceId)) {
+        _conversations[deviceId] = [];
+      }
+      notifyListeners();
+    };
+    nearby.onPeerDisconnected = (endpointId, _) {
+      final deviceId = _endpointToDevice[endpointId];
+      if (deviceId != null && _peers.containsKey(deviceId)) {
+        _peers[deviceId] = _peers[deviceId]!.copyWith(connected: false);
       }
       notifyListeners();
     };
@@ -106,7 +122,7 @@ class MeshProvider extends ChangeNotifier {
   }
 
   Future<bool> startNearby() async {
-    _nearbyActive = await nearby.start(_identity.name);
+    _nearbyActive = await nearby.start(_identity.name, _identity.id);
     notifyListeners();
     return _nearbyActive;
   }
@@ -118,8 +134,13 @@ class MeshProvider extends ChangeNotifier {
     notifyListeners();
   }
 
-  Future<void> connectToPeer(String endpointId) async {
-    await nearby.connectTo(endpointId);
+  Future<void> connectToPeer(String deviceId) async {
+    final entries = _endpointToDevice.entries.where((e) => e.value == deviceId).toList();
+    if (entries.isNotEmpty) {
+      await nearby.connectTo(entries.first.key);
+    } else {
+      debugPrint('[Mesh] Cannot connect: no endpoint found for device $deviceId');
+    }
   }
 
   bool _hasSeen(String msgId) {
