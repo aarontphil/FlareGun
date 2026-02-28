@@ -8,6 +8,7 @@ import '../models/message.dart';
 import '../models/peer.dart';
 import '../models/identity.dart';
 import '../ai/offline_ai.dart';
+import '../ai/gemma_service.dart';
 import 'nearby_service.dart';
 
 class MeshProvider extends ChangeNotifier {
@@ -15,6 +16,7 @@ class MeshProvider extends ChangeNotifier {
   DeviceIdentity get identity => _identity;
 
   final NearbyService nearby = NearbyService();
+  final GemmaService gemma = GemmaService();
   bool _nearbyActive = false;
   bool get nearbyActive => _nearbyActive;
 
@@ -77,6 +79,8 @@ class MeshProvider extends ChangeNotifier {
     _serverUrl = _settingsBox.get('serverUrl', defaultValue: '');
     _loadMessages();
     _setupNearbyCallbacks();
+    await gemma.init();
+    gemma.onStatusChanged.listen((_) => notifyListeners());
     notifyListeners();
   }
 
@@ -337,6 +341,15 @@ class MeshProvider extends ChangeNotifier {
   }
 
   String aiChat(String query) => OfflineAI.chat(query);
+
+  Stream<String> aiChatStream(String query) async* {
+    if (gemma.isReady) {
+      yield* gemma.chatStream(query);
+    } else {
+      final response = OfflineAI.chat(query);
+      yield response;
+    }
+  }
 
   Future<void> connectRelay(String serverHost) async {
     _serverUrl = serverHost.replaceAll(RegExp(r'^https?://'), '').replaceAll(RegExp(r'/$'), '');
