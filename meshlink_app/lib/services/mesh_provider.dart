@@ -3,7 +3,6 @@ import 'dart:convert';
 import 'dart:collection';
 import 'package:flutter/foundation.dart';
 import 'package:hive_flutter/hive_flutter.dart';
-import 'package:http/http.dart' as http;
 import 'package:web_socket_channel/web_socket_channel.dart';
 import '../models/message.dart';
 import '../models/peer.dart';
@@ -37,6 +36,9 @@ class MeshProvider extends ChangeNotifier {
 
   final LinkedHashSet<String> _seenMessageIds = LinkedHashSet();
   static const int _maxSeenSize = 500;
+
+  final Map<String, String> _endpointToDevice = {};
+  final Map<String, String> _deviceToEndpoint = {};
 
   List<MeshMessage> getConversation(String peerId) {
     return List.unmodifiable(_conversations[peerId] ?? []);
@@ -78,37 +80,48 @@ class MeshProvider extends ChangeNotifier {
     notifyListeners();
   }
 
-  final Map<String, String> _endpointToDevice = {};
+  void _mapEndpoint(String endpointId, String deviceId) {
+    _endpointToDevice[endpointId] = deviceId;
+    _deviceToEndpoint[deviceId] = endpointId;
+  }
+
+  (String deviceId, String displayName) _parseNameInfo(String nameInfo, String fallbackId) {
+    final pipe = nameInfo.indexOf('|');
+    if (pipe > 0) {
+      return (nameInfo.substring(0, pipe), nameInfo.substring(pipe + 1));
+    }
+    return (fallbackId, nameInfo);
+  }
 
   void _setupNearbyCallbacks() {
     nearby.onPeerFound = (endpointId, nameInfo) {
-      final parts = nameInfo.split('|');
-      final deviceId = parts.length > 1 ? parts[0] : endpointId;
-      final name = parts.length > 1 ? parts.sublist(1).join('|') : nameInfo;
-
-      _endpointToDevice[endpointId] = deviceId;
+      final (deviceId, name) = _parseNameInfo(nameInfo, endpointId);
+      if (deviceId == _identity.id) return;
+      _mapEndpoint(endpointId, deviceId);
       _peers[deviceId] = Peer(deviceId: deviceId, name: name, connected: false);
       notifyListeners();
     };
-    nearby.onPeerLost = (endpointId, _) {
-      final deviceId = _endpointToDevice[endpointId];
-      if (deviceId != null && _peers.containsKey(deviceId)) {
-        _peers.remove(deviceId);
-      }
-      notifyListeners();
-    };
-    nearby.onPeerConnected = (endpointId, nameInfo) {
-      final parts = nameInfo.split('|');
-      final deviceId = parts.length > 1 ? parts[0] : endpointId;
-      final name = parts.length > 1 ? parts.sublist(1).join('|') : nameInfo;
 
-      _endpointToDevice[endpointId] = deviceId;
-      _peers[deviceId] = Peer(deviceId: deviceId, name: name, connected: true);
-      if (!_conversations.containsKey(deviceId)) {
-        _conversations[deviceId] = [];
+    nearby.onPeerLost = (endpointId, _) {
+      final deviceId = _endpointToDevice.remove(endpointId);
+      if (deviceId != null) {
+        _deviceToEndpoint.remove(deviceId);
+        if (_peers.containsKey(deviceId) && !_peers[deviceId]!.connected) {
+          _peers.remove(deviceId);
+        }
       }
       notifyListeners();
     };
+
+    nearby.onPeerConnected = (endpointId, nameInfo) {
+      final (deviceId, name) = _parseNameInfo(nameInfo, endpointId);
+      if (deviceId == _identity.id) return;
+      _mapEndpoint(endpointId, deviceId);
+      _peers[deviceId] = Peer(deviceId: deviceId, name: name, connected: true);
+      _conversations.putIfAbsent(deviceId, () => []);
+      notifyListeners();
+    };
+
     nearby.onPeerDisconnected = (endpointId, _) {
       final deviceId = _endpointToDevice[endpointId];
       if (deviceId != null && _peers.containsKey(deviceId)) {
@@ -116,8 +129,9 @@ class MeshProvider extends ChangeNotifier {
       }
       notifyListeners();
     };
+
     nearby.onMessageReceived = (endpointId, raw) {
-      _handleNearbyMessage(endpointId, raw);
+      _handleIncoming(endpointId, raw);
     };
   }
 
@@ -131,21 +145,19 @@ class MeshProvider extends ChangeNotifier {
     await nearby.stop();
     _nearbyActive = false;
     _peers.clear();
+    _endpointToDevice.clear();
+    _deviceToEndpoint.clear();
     notifyListeners();
   }
 
   Future<void> connectToPeer(String deviceId) async {
-    final entries = _endpointToDevice.entries.where((e) => e.value == deviceId).toList();
-    if (entries.isNotEmpty) {
-      await nearby.connectTo(entries.first.key);
-    } else {
-      debugPrint('[Mesh] Cannot connect: no endpoint found for device $deviceId');
+    final endpointId = _deviceToEndpoint[deviceId];
+    if (endpointId != null) {
+      await nearby.connectTo(endpointId);
     }
   }
 
-  bool _hasSeen(String msgId) {
-    return _seenMessageIds.contains(msgId);
-  }
+  bool _hasSeen(String msgId) => _seenMessageIds.contains(msgId);
 
   void _markSeen(String msgId) {
     _seenMessageIds.add(msgId);
@@ -154,14 +166,13 @@ class MeshProvider extends ChangeNotifier {
     }
   }
 
-  void _handleNearbyMessage(String endpointId, String raw) {
+  void _handleIncoming(String endpointId, String raw) {
     try {
       final data = jsonDecode(raw) as Map<String, dynamic>;
       final msg = MeshMessage.fromJson(data);
 
       if (_hasSeen(msg.id)) return;
       _markSeen(msg.id);
-
       if (msg.senderId == _identity.id) return;
 
       if (msg.isReceipt) {
@@ -169,11 +180,11 @@ class MeshProvider extends ChangeNotifier {
         return;
       }
 
-      final conversationKey = msg.senderId;
+      final senderId = msg.senderId;
 
-      if (!_peers.containsKey(conversationKey)) {
-        _peers[conversationKey] = Peer(
-          deviceId: conversationKey,
+      if (!_peers.containsKey(senderId)) {
+        _peers[senderId] = Peer(
+          deviceId: senderId,
           name: msg.senderName,
           connected: true,
         );
@@ -181,11 +192,11 @@ class MeshProvider extends ChangeNotifier {
 
       msg.status = MessageStatus.delivered;
 
-      _conversations.putIfAbsent(conversationKey, () => []);
-      if (!_conversations[conversationKey]!.any((m) => m.id == msg.id)) {
-        _conversations[conversationKey]!.add(msg);
-        _conversations[conversationKey]!.sort((a, b) => a.timestamp.compareTo(b.timestamp));
-        _persistMessage(conversationKey, msg);
+      _conversations.putIfAbsent(senderId, () => []);
+      if (!_conversations[senderId]!.any((m) => m.id == msg.id)) {
+        _conversations[senderId]!.add(msg);
+        _conversations[senderId]!.sort((a, b) => a.timestamp.compareTo(b.timestamp));
+        _persistMessage(senderId, msg);
       }
 
       if (!_broadcastMessages.any((m) => m.id == msg.id)) {
@@ -193,10 +204,10 @@ class MeshProvider extends ChangeNotifier {
         _broadcastMessages.sort((a, b) => a.timestamp.compareTo(b.timestamp));
       }
 
-      _sendReceipt(msg.id, endpointId);
+      _sendReceipt(msg.id);
 
       if (msg.canForward) {
-        _forwardToOthers(endpointId, msg);
+        _relayToOthers(endpointId, msg);
       }
 
       notifyListeners();
@@ -205,51 +216,52 @@ class MeshProvider extends ChangeNotifier {
     }
   }
 
-  void _handleReceipt(MeshMessage receipt, String endpointId) {
-    final originalMsgId = receipt.text;
+  void _handleReceipt(MeshMessage receipt, String fromEndpoint) {
+    final originalId = receipt.text;
+    bool found = false;
 
     for (final conv in _conversations.values) {
       for (final msg in conv) {
-        if (msg.id == originalMsgId && msg.senderId == _identity.id) {
+        if (msg.id == originalId && msg.senderId == _identity.id) {
           msg.status = MessageStatus.delivered;
-          _persistMessage(_getConversationKeyForMsg(msg), msg);
-          notifyListeners();
+          found = true;
           break;
         }
       }
+      if (found) break;
+    }
+
+    if (found) {
+      _persistAll();
+      notifyListeners();
     }
 
     if (receipt.canForward) {
-      _forwardToOthers(endpointId, receipt);
+      _relayToOthers(fromEndpoint, receipt);
     }
   }
 
-  String _getConversationKeyForMsg(MeshMessage msg) {
-    for (final entry in _conversations.entries) {
-      if (entry.value.any((m) => m.id == msg.id)) {
-        return entry.key;
-      }
-    }
-    return msg.senderId;
-  }
-
-  void _sendReceipt(String originalMsgId, String endpointId) {
+  void _sendReceipt(String originalMsgId) {
     final receipt = MeshMessage.receipt(originalMsgId, _identity.id, _identity.name);
     _markSeen(receipt.id);
     final payload = jsonEncode(receipt.toJson());
-
-    for (final peerId in nearby.connectedEndpoints.keys) {
-      nearby.sendMessage(peerId, payload);
+    for (final eid in nearby.connectedEndpoints.keys) {
+      nearby.sendMessage(eid, payload);
     }
   }
 
-  void _forwardToOthers(String sourceEndpointId, MeshMessage msg) {
+  void _relayToOthers(String sourceEndpoint, MeshMessage msg) {
     final forwarded = msg.forwarded();
     final payload = jsonEncode(forwarded.toJson());
+    for (final eid in nearby.connectedEndpoints.keys) {
+      if (eid == sourceEndpoint) continue;
+      nearby.sendMessage(eid, payload);
+    }
+  }
 
-    for (final peerId in nearby.connectedEndpoints.keys) {
-      if (peerId == sourceEndpointId) continue;
-      nearby.sendMessage(peerId, payload);
+  Future<void> _sendViaAllEndpoints(String payload) async {
+    for (final eid in nearby.connectedEndpoints.keys) {
+      await nearby.sendMessage(eid, payload);
     }
   }
 
@@ -265,7 +277,6 @@ class MeshProvider extends ChangeNotifier {
     );
 
     _markSeen(msg.id);
-
     _conversations.putIfAbsent(peerId, () => []);
     _conversations[peerId]!.add(msg);
     await _persistMessage(peerId, msg);
@@ -274,14 +285,8 @@ class MeshProvider extends ChangeNotifier {
     final payload = jsonEncode(msg.toJson());
     bool dispatched = false;
 
-    if (nearby.connectedEndpoints.containsKey(peerId)) {
-      await nearby.sendMessage(peerId, payload);
-      dispatched = true;
-    }
-
-    for (final otherId in nearby.connectedEndpoints.keys) {
-      if (otherId == peerId) continue;
-      await nearby.sendMessage(otherId, payload);
+    if (nearby.connectedEndpoints.isNotEmpty) {
+      await _sendViaAllEndpoints(payload);
       dispatched = true;
     }
 
@@ -305,22 +310,33 @@ class MeshProvider extends ChangeNotifier {
       senderId: _identity.id,
       senderName: _identity.name,
       priority: priority,
+      status: MessageStatus.sending,
     );
 
     _markSeen(msg.id);
     _broadcastMessages.add(msg);
     notifyListeners();
 
-    await nearby.broadcastMessage(jsonEncode(msg.toJson()));
+    final payload = jsonEncode(msg.toJson());
+    bool dispatched = false;
+
+    if (nearby.connectedEndpoints.isNotEmpty) {
+      await _sendViaAllEndpoints(payload);
+      dispatched = true;
+    }
 
     if (_wsConnected && _channel != null) {
       _channel!.sink.add(jsonEncode({'type': 'message', 'message': msg.toJson()}));
+      dispatched = true;
+    }
+
+    if (dispatched) {
+      msg.status = MessageStatus.sent;
+      notifyListeners();
     }
   }
 
-  String aiChat(String query) {
-    return OfflineAI.chat(query);
-  }
+  String aiChat(String query) => OfflineAI.chat(query);
 
   Future<void> connectRelay(String serverHost) async {
     _serverUrl = serverHost.replaceAll(RegExp(r'^https?://'), '').replaceAll(RegExp(r'/$'), '');
@@ -433,6 +449,16 @@ class MeshProvider extends ChangeNotifier {
     final data = msg.toJson();
     data['_peerId'] = peerId;
     await _messagesBox.put(msg.id, data);
+  }
+
+  Future<void> _persistAll() async {
+    for (final entry in _conversations.entries) {
+      for (final msg in entry.value) {
+        if (msg.senderId == _identity.id) {
+          await _persistMessage(entry.key, msg);
+        }
+      }
+    }
   }
 
   Future<void> clearData() async {
