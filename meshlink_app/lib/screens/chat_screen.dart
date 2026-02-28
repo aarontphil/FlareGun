@@ -53,6 +53,7 @@ class _ChatScreenState extends State<ChatScreen> {
     final messages = mesh.getConversation(widget.peerId);
     final myId = mesh.identity.id;
     final isOnline = mesh.connectedPeers.any((p) => p.deviceId == widget.peerId);
+    final isEncrypted = mesh.crypto.hasSharedKey(widget.peerId);
 
     return Scaffold(
       backgroundColor: const Color(0xFF0A0A0A),
@@ -80,12 +81,22 @@ class _ChatScreenState extends State<ChatScreen> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(widget.peerName, style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w600)),
-                Text(
-                  isOnline ? 'Connected' : 'Offline',
-                  style: TextStyle(
-                    fontSize: 11,
-                    color: isOnline ? const Color(0xFF4CAF50) : const Color(0xFF4A4A4E),
-                  ),
+                Row(
+                  children: [
+                    Text(
+                      isOnline ? 'Connected' : 'Offline',
+                      style: TextStyle(
+                        fontSize: 11,
+                        color: isOnline ? const Color(0xFF4CAF50) : const Color(0xFF4A4A4E),
+                      ),
+                    ),
+                    if (isEncrypted) ...[
+                      const SizedBox(width: 6),
+                      const Icon(Icons.lock_rounded, size: 10, color: Color(0xFF4CAF50)),
+                      const SizedBox(width: 2),
+                      const Text('E2E', style: TextStyle(fontSize: 10, color: Color(0xFF4CAF50))),
+                    ],
+                  ],
                 ),
               ],
             ),

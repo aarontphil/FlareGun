@@ -16,6 +16,7 @@ class MeshMessage {
   final String msgType;
   MessageStatus status;
   bool isRead;
+  bool encrypted;
   final Map<String, dynamic>? aiAnalysis;
 
   MeshMessage({
@@ -32,6 +33,7 @@ class MeshMessage {
     this.msgType = 'message',
     this.status = MessageStatus.sending,
     this.isRead = false,
+    this.encrypted = false,
     this.aiAnalysis,
   })  : id = id ?? const Uuid().v4(),
         timestamp = timestamp ?? DateTime.now().millisecondsSinceEpoch,
@@ -52,6 +54,7 @@ class MeshMessage {
       msgType: json['msgType'] as String? ?? 'message',
       status: _parseStatus(json['status'] as String?),
       isRead: json['isRead'] as bool? ?? false,
+      encrypted: json['encrypted'] as bool? ?? false,
       aiAnalysis: json['aiAnalysis'] as Map<String, dynamic>?,
     );
   }
@@ -70,6 +73,7 @@ class MeshMessage {
     'msgType': msgType,
     'status': status.name,
     'isRead': isRead,
+    'encrypted': encrypted,
     if (aiAnalysis != null) 'aiAnalysis': aiAnalysis,
   };
 

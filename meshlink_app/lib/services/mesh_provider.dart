@@ -10,6 +10,7 @@ import '../models/identity.dart';
 import '../ai/offline_ai.dart';
 import '../ai/gemma_service.dart';
 import 'nearby_service.dart';
+import 'crypto_service.dart';
 
 class MeshProvider extends ChangeNotifier {
   late DeviceIdentity _identity;
@@ -17,6 +18,7 @@ class MeshProvider extends ChangeNotifier {
 
   final NearbyService nearby = NearbyService();
   final GemmaService gemma = GemmaService();
+  final CryptoService crypto = CryptoService();
   bool _nearbyActive = false;
   bool get nearbyActive => _nearbyActive;
 
@@ -97,6 +99,7 @@ class MeshProvider extends ChangeNotifier {
     _setupNearbyCallbacks();
     await gemma.init();
     gemma.onStatusChanged.listen((_) => notifyListeners());
+    await crypto.init();
     notifyListeners();
   }
 
@@ -139,6 +142,7 @@ class MeshProvider extends ChangeNotifier {
       _mapEndpoint(endpointId, deviceId);
       _peers[deviceId] = Peer(deviceId: deviceId, name: name, connected: true);
       _conversations.putIfAbsent(deviceId, () => []);
+      _sendKeyExchange(endpointId);
       notifyListeners();
     };
 
@@ -186,10 +190,10 @@ class MeshProvider extends ChangeNotifier {
     }
   }
 
-  void _handleIncoming(String endpointId, String raw) {
+  void _handleIncoming(String endpointId, String raw) async {
     try {
       final data = jsonDecode(raw) as Map<String, dynamic>;
-      final msg = MeshMessage.fromJson(data);
+      var msg = MeshMessage.fromJson(data);
 
       if (_hasSeen(msg.id)) return;
       _markSeen(msg.id);
@@ -200,7 +204,29 @@ class MeshProvider extends ChangeNotifier {
         return;
       }
 
+      if (msg.msgType == 'key_exchange') {
+        _handleKeyExchange(msg);
+        return;
+      }
+
       final senderId = msg.senderId;
+
+      if (msg.encrypted && crypto.hasSharedKey(senderId)) {
+        msg = MeshMessage(
+          id: msg.id,
+          text: await crypto.decrypt(msg.text, senderId),
+          senderId: msg.senderId,
+          senderName: msg.senderName,
+          priority: msg.priority,
+          timestamp: msg.timestamp,
+          ttl: msg.ttl,
+          hopCount: msg.hopCount,
+          originId: msg.originId,
+          msgType: msg.msgType,
+          status: msg.status,
+          encrypted: true,
+        );
+      }
 
       if (!_peers.containsKey(senderId)) {
         _peers[senderId] = Peer(
@@ -270,6 +296,23 @@ class MeshProvider extends ChangeNotifier {
     }
   }
 
+  void _sendKeyExchange(String endpointId) {
+    final msg = MeshMessage(
+      text: crypto.publicKeyBase64,
+      senderId: _identity.id,
+      senderName: _identity.name,
+      msgType: 'key_exchange',
+    );
+    _markSeen(msg.id);
+    nearby.sendMessage(endpointId, jsonEncode(msg.toJson()));
+    debugPrint('[Crypto] Sent public key to endpoint: $endpointId');
+  }
+
+  void _handleKeyExchange(MeshMessage msg) async {
+    await crypto.handlePeerPublicKey(msg.senderId, msg.text);
+    notifyListeners();
+  }
+
   void _relayToOthers(String sourceEndpoint, MeshMessage msg) {
     final forwarded = msg.forwarded();
     final payload = jsonEncode(forwarded.toJson());
@@ -294,6 +337,7 @@ class MeshProvider extends ChangeNotifier {
       senderName: _identity.name,
       priority: priority,
       status: MessageStatus.sending,
+      encrypted: crypto.hasSharedKey(peerId),
     );
 
     _markSeen(msg.id);
@@ -302,7 +346,23 @@ class MeshProvider extends ChangeNotifier {
     await _persistMessage(peerId, msg);
     notifyListeners();
 
-    final payload = jsonEncode(msg.toJson());
+    String wireText = msg.text;
+    if (crypto.hasSharedKey(peerId)) {
+      wireText = await crypto.encrypt(msg.text, peerId);
+    }
+
+    final wireMsg = MeshMessage(
+      id: msg.id,
+      text: wireText,
+      senderId: msg.senderId,
+      senderName: msg.senderName,
+      priority: msg.priority,
+      timestamp: msg.timestamp,
+      status: msg.status,
+      encrypted: crypto.hasSharedKey(peerId),
+    );
+
+    final payload = jsonEncode(wireMsg.toJson());
     bool dispatched = false;
 
     if (nearby.connectedEndpoints.isNotEmpty) {
