@@ -17,6 +17,14 @@ class _ChatScreenState extends State<ChatScreen> {
   final _controller = TextEditingController();
   final _scrollController = ScrollController();
 
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      context.read<MeshProvider>().markConversationRead(widget.peerId);
+    });
+  }
+
   void _send() async {
     final text = _controller.text.trim();
     if (text.isEmpty) return;

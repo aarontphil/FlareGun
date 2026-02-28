@@ -15,6 +15,7 @@ class MeshMessage {
   final String originId;
   final String msgType;
   MessageStatus status;
+  bool isRead;
   final Map<String, dynamic>? aiAnalysis;
 
   MeshMessage({
@@ -30,6 +31,7 @@ class MeshMessage {
     String? originId,
     this.msgType = 'message',
     this.status = MessageStatus.sending,
+    this.isRead = false,
     this.aiAnalysis,
   })  : id = id ?? const Uuid().v4(),
         timestamp = timestamp ?? DateTime.now().millisecondsSinceEpoch,
@@ -49,6 +51,7 @@ class MeshMessage {
       originId: json['originId'] as String?,
       msgType: json['msgType'] as String? ?? 'message',
       status: _parseStatus(json['status'] as String?),
+      isRead: json['isRead'] as bool? ?? false,
       aiAnalysis: json['aiAnalysis'] as Map<String, dynamic>?,
     );
   }
@@ -66,6 +69,7 @@ class MeshMessage {
     'originId': originId,
     'msgType': msgType,
     'status': status.name,
+    'isRead': isRead,
     if (aiAnalysis != null) 'aiAnalysis': aiAnalysis,
   };
 

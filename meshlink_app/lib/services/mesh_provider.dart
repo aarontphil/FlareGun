@@ -54,8 +54,24 @@ class MeshProvider extends ChangeNotifier {
 
   int unreadCount(String peerId) {
     return _conversations[peerId]
-        ?.where((m) => m.senderId != _identity.id && !(m.aiAnalysis?['read'] == true))
+        ?.where((m) => m.senderId != _identity.id && !m.isRead)
         .length ?? 0;
+  }
+
+  void markConversationRead(String peerId) {
+    final conv = _conversations[peerId];
+    if (conv == null) return;
+    bool changed = false;
+    for (final msg in conv) {
+      if (msg.senderId != _identity.id && !msg.isRead) {
+        msg.isRead = true;
+        changed = true;
+      }
+    }
+    if (changed) {
+      _persistAll();
+      notifyListeners();
+    }
   }
 
   late Box _identityBox;

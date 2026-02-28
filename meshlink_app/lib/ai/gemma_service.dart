@@ -4,7 +4,9 @@ import 'package:flutter_gemma/flutter_gemma.dart';
 
 class GemmaService {
   static const _modelUrl =
-      'https://huggingface.co/nicholasgiri-google/gemma3-1B-it-int8-ekb5/resolve/main/gemma3-1B-it-int8-ekb5.task';
+      'https://huggingface.co/google/gemma-3-1b-it/resolve/main/gemma-3-1b-it-gpu-int8.task';
+
+  static const _hfToken = 'hf_xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx';
 
   bool _ready = false;
   bool get isReady => _ready;
@@ -27,15 +29,15 @@ class GemmaService {
 
   Future<void> init() async {
     try {
+      FlutterGemma.initialize(huggingFaceToken: _hfToken);
       _ready = FlutterGemma.hasActiveModel();
       _onStatusChanged.add(null);
       if (!_ready) {
         downloadModel();
       }
     } catch (e) {
-      debugPrint('[Gemma] Init check error: $e');
+      debugPrint('[Gemma] Init error: $e');
       _ready = false;
-      downloadModel();
     }
   }
 
@@ -51,6 +53,8 @@ class GemmaService {
         modelType: ModelType.gemmaIt,
       ).fromNetwork(
         _modelUrl,
+        token: _hfToken,
+        foreground: true,
       ).withProgress((int percent) {
         _progress = percent / 100.0;
         _onStatusChanged.add(null);
