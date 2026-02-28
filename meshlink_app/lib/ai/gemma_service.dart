@@ -29,9 +29,13 @@ class GemmaService {
     try {
       _ready = FlutterGemma.hasActiveModel();
       _onStatusChanged.add(null);
+      if (!_ready) {
+        downloadModel();
+      }
     } catch (e) {
       debugPrint('[Gemma] Init check error: $e');
       _ready = false;
+      downloadModel();
     }
   }
 
