@@ -6,6 +6,7 @@ import 'screens/chat_list_screen.dart';
 import 'screens/peers_screen.dart';
 import 'screens/ai_screen.dart';
 import 'screens/settings_screen.dart';
+import 'screens/channel_screen.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -83,6 +84,7 @@ class _HomeScreenState extends State<HomeScreen> {
 
   final _screens = const [
     ChatListScreen(),
+    ChannelListScreen(),
     PeersScreen(),
     AIScreen(),
     SettingsScreen(),
@@ -97,6 +99,7 @@ class _HomeScreenState extends State<HomeScreen> {
         onTap: (i) => setState(() => _index = i),
         items: const [
           BottomNavigationBarItem(icon: Icon(Icons.chat_bubble_rounded, size: 22), label: 'Chats'),
+          BottomNavigationBarItem(icon: Icon(Icons.groups_rounded, size: 22), label: 'Channels'),
           BottomNavigationBarItem(icon: Icon(Icons.radar_rounded, size: 22), label: 'Mesh'),
           BottomNavigationBarItem(icon: Icon(Icons.auto_awesome, size: 22), label: 'AI'),
           BottomNavigationBarItem(icon: Icon(Icons.tune_rounded, size: 22), label: 'Settings'),

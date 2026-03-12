@@ -11,6 +11,7 @@ import '../ai/offline_ai.dart';
 import '../ai/gemma_service.dart';
 import 'nearby_service.dart';
 import 'crypto_service.dart';
+import 'location_service.dart';
 
 class MeshProvider extends ChangeNotifier {
   late DeviceIdentity _identity;
@@ -19,6 +20,7 @@ class MeshProvider extends ChangeNotifier {
   final NearbyService nearby = NearbyService();
   final GemmaService gemma = GemmaService();
   final CryptoService crypto = CryptoService();
+  final LocationService location = LocationService();
   bool _nearbyActive = false;
   bool get nearbyActive => _nearbyActive;
 
@@ -230,6 +232,16 @@ class MeshProvider extends ChangeNotifier {
         return;
       }
 
+      if (msg.msgType == 'channel' && msg.channel != null) {
+        joinChannel(msg.channel!);
+        _conversations.putIfAbsent('channel:${msg.channel}', () => []);
+        _conversations['channel:${msg.channel}']!.add(msg);
+        _persistMessage('channel:${msg.channel}', msg);
+        notifyListeners();
+        if (msg.canForward) _relayToOthers(endpointId, msg);
+        return;
+      }
+
       final senderId = msg.senderId;
 
       if (msg.encrypted && crypto.hasSharedKey(senderId)) {
@@ -332,6 +344,79 @@ class MeshProvider extends ChangeNotifier {
   void _handleKeyExchange(MeshMessage msg) async {
     await crypto.handlePeerPublicKey(msg.senderId, msg.text);
     notifyListeners();
+  }
+
+  // --- Channels ---
+  final Map<String, Set<String>> _channels = {};
+  List<String> get channels => _channels.keys.toList();
+
+  void createChannel(String name) {
+    _channels.putIfAbsent(name, () => {_identity.id});
+    notifyListeners();
+  }
+
+  void joinChannel(String name) {
+    _channels.putIfAbsent(name, () => {});
+    _channels[name]!.add(_identity.id);
+    notifyListeners();
+  }
+
+  void leaveChannel(String name) {
+    _channels[name]?.remove(_identity.id);
+    if (_channels[name]?.isEmpty ?? false) _channels.remove(name);
+    notifyListeners();
+  }
+
+  bool isInChannel(String name) => _channels[name]?.contains(_identity.id) ?? false;
+
+  List<MeshMessage> getChannelMessages(String channelName) {
+    return _conversations['channel:$channelName'] ?? [];
+  }
+
+  Future<void> sendChannelMessage(String channelName, String text) async {
+    if (text.trim().isEmpty) return;
+
+    final msg = MeshMessage(
+      text: text.trim(),
+      senderId: _identity.id,
+      senderName: _identity.name,
+      msgType: 'channel',
+      channel: channelName,
+    );
+
+    _markSeen(msg.id);
+    _conversations.putIfAbsent('channel:$channelName', () => []);
+    _conversations['channel:$channelName']!.add(msg);
+    await _persistMessage('channel:$channelName', msg);
+    notifyListeners();
+
+    final payload = jsonEncode(msg.toJson());
+    await _sendViaAllEndpoints(payload);
+  }
+
+  // --- Location sharing ---
+  Future<void> sendLocation(String peerId) async {
+    await location.refreshLocation();
+    if (!location.hasLocation) return;
+
+    final msg = MeshMessage(
+      text: '📍 ${LocationService.formatCoords(location.latitude!, location.longitude!)}',
+      senderId: _identity.id,
+      senderName: _identity.name,
+      msgType: 'location',
+      latitude: location.latitude,
+      longitude: location.longitude,
+      encrypted: crypto.hasSharedKey(peerId),
+    );
+
+    _markSeen(msg.id);
+    _conversations.putIfAbsent(peerId, () => []);
+    _conversations[peerId]!.add(msg);
+    await _persistMessage(peerId, msg);
+    notifyListeners();
+
+    final payload = jsonEncode(msg.toJson());
+    await _sendViaAllEndpoints(payload);
   }
 
   void _relayToOthers(String sourceEndpoint, MeshMessage msg) {

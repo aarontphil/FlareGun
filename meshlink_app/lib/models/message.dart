@@ -17,6 +17,9 @@ class MeshMessage {
   MessageStatus status;
   bool isRead;
   bool encrypted;
+  final double? latitude;
+  final double? longitude;
+  final String? channel;
   final Map<String, dynamic>? aiAnalysis;
 
   MeshMessage({
@@ -34,6 +37,9 @@ class MeshMessage {
     this.status = MessageStatus.sending,
     this.isRead = false,
     this.encrypted = false,
+    this.latitude,
+    this.longitude,
+    this.channel,
     this.aiAnalysis,
   })  : id = id ?? const Uuid().v4(),
         timestamp = timestamp ?? DateTime.now().millisecondsSinceEpoch,
@@ -55,6 +61,9 @@ class MeshMessage {
       status: _parseStatus(json['status'] as String?),
       isRead: json['isRead'] as bool? ?? false,
       encrypted: json['encrypted'] as bool? ?? false,
+      latitude: (json['latitude'] as num?)?.toDouble(),
+      longitude: (json['longitude'] as num?)?.toDouble(),
+      channel: json['channel'] as String?,
       aiAnalysis: json['aiAnalysis'] as Map<String, dynamic>?,
     );
   }
@@ -74,6 +83,9 @@ class MeshMessage {
     'status': status.name,
     'isRead': isRead,
     'encrypted': encrypted,
+    if (latitude != null) 'latitude': latitude,
+    if (longitude != null) 'longitude': longitude,
+    if (channel != null) 'channel': channel,
     if (aiAnalysis != null) 'aiAnalysis': aiAnalysis,
   };
 
@@ -91,6 +103,9 @@ class MeshMessage {
       originId: originId,
       msgType: msgType,
       status: status,
+      latitude: latitude,
+      longitude: longitude,
+      channel: channel,
       aiAnalysis: aiAnalysis,
     );
   }
@@ -106,6 +121,9 @@ class MeshMessage {
   }
 
   bool get isReceipt => msgType == 'receipt';
+  bool get isLocation => msgType == 'location';
+  bool get isChannelMsg => channel != null;
+  bool get hasLocation => latitude != null && longitude != null;
   bool get canForward => ttl > 0;
   String get senderInitial => senderName.isNotEmpty ? senderName[0].toUpperCase() : '?';
 

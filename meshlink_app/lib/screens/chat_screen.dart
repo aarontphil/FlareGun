@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../models/message.dart';
 import '../services/mesh_provider.dart';
+import '../services/location_service.dart';
 
 class ChatScreen extends StatefulWidget {
   final String peerId;
@@ -193,17 +194,43 @@ class _ChatScreenState extends State<ChatScreen> {
                               child: Column(
                                 crossAxisAlignment: CrossAxisAlignment.end,
                                 children: [
-                                  Align(
-                                    alignment: Alignment.centerLeft,
-                                    child: Text(
-                                      msg.text,
-                                      style: TextStyle(
-                                        fontSize: 14,
-                                        height: 1.4,
-                                        color: isOwn ? Colors.white : Colors.white.withValues(alpha: 0.85),
+                                  if (msg.hasLocation) ...[
+                                    Align(
+                                      alignment: Alignment.centerLeft,
+                                      child: Column(
+                                        crossAxisAlignment: CrossAxisAlignment.start,
+                                        children: [
+                                          Row(
+                                            mainAxisSize: MainAxisSize.min,
+                                            children: [
+                                              Icon(Icons.location_on_rounded, size: 16, color: isOwn ? Colors.white : const Color(0xFFE53935)),
+                                              const SizedBox(width: 4),
+                                              Text(
+                                                LocationService.formatCoords(msg.latitude!, msg.longitude!),
+                                                style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: isOwn ? Colors.white : Colors.white.withValues(alpha: 0.9)),
+                                              ),
+                                            ],
+                                          ),
+                                          const SizedBox(height: 4),
+                                          Text(
+                                            LocationService.toGoogleMapsUrl(msg.latitude!, msg.longitude!),
+                                            style: TextStyle(fontSize: 11, color: isOwn ? Colors.white.withValues(alpha: 0.7) : const Color(0xFF4A4A4E)),
+                                          ),
+                                        ],
                                       ),
                                     ),
-                                  ),
+                                  ] else ...[
+                                    Align(
+                                      alignment: Alignment.centerLeft,
+                                      child: Text(
+                                        msg.text,
+                                        style: TextStyle(
+                                          fontSize: 14,
+                                          color: isOwn ? Colors.white : Colors.white.withValues(alpha: 0.85),
+                                        ),
+                                      ),
+                                    ),
+                                  ],
                                   const SizedBox(height: 4),
                                   Row(
                                     mainAxisSize: MainAxisSize.min,
@@ -258,6 +285,22 @@ class _ChatScreenState extends State<ChatScreen> {
                         contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
                       ),
                     ),
+                  ),
+                ),
+                const SizedBox(width: 8),
+                GestureDetector(
+                  onTap: () async {
+                    final mesh = context.read<MeshProvider>();
+                    await mesh.location.init();
+                    await mesh.sendLocation(widget.peerId);
+                  },
+                  child: Container(
+                    width: 44, height: 44,
+                    decoration: BoxDecoration(
+                      color: const Color(0xFF1E1E22),
+                      shape: BoxShape.circle,
+                    ),
+                    child: const Icon(Icons.location_on_rounded, color: Color(0xFFE53935), size: 20),
                   ),
                 ),
                 const SizedBox(width: 8),
