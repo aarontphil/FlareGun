@@ -99,9 +99,52 @@ class _ChatScreenState extends State<ChatScreen> {
                     ),
                     if (isEncrypted) ...[
                       const SizedBox(width: 6),
-                      const Icon(Icons.lock_rounded, size: 10, color: Color(0xFF4CAF50)),
-                      const SizedBox(width: 2),
-                      const Text('E2E', style: TextStyle(fontSize: 10, color: Color(0xFF4CAF50))),
+                      GestureDetector(
+                        onTap: () {
+                          final safetyNum = mesh.crypto.getSafetyNumber(widget.peerId);
+                          showDialog(
+                            context: context,
+                            builder: (_) => AlertDialog(
+                              backgroundColor: const Color(0xFF1E1E22),
+                              title: const Row(
+                                children: [
+                                  Icon(Icons.verified_user_rounded, color: Color(0xFF4CAF50), size: 20),
+                                  SizedBox(width: 8),
+                                  Text('Safety Number', style: TextStyle(fontSize: 16)),
+                                ],
+                              ),
+                              content: Column(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Text(
+                                    safetyNum,
+                                    style: const TextStyle(fontSize: 32, fontWeight: FontWeight.w700, letterSpacing: 8, color: Color(0xFF4CAF50)),
+                                  ),
+                                  const SizedBox(height: 16),
+                                  Text(
+                                    'Compare this number with ${widget.peerName} in person. If they match, your connection is secure.',
+                                    textAlign: TextAlign.center,
+                                    style: TextStyle(fontSize: 12, color: Colors.white.withValues(alpha: 0.5)),
+                                  ),
+                                ],
+                              ),
+                              actions: [
+                                TextButton(
+                                  onPressed: () => Navigator.pop(context),
+                                  child: const Text('OK', style: TextStyle(color: Color(0xFFE53935))),
+                                ),
+                              ],
+                            ),
+                          );
+                        },
+                        child: const Row(
+                          children: [
+                            Icon(Icons.lock_rounded, size: 10, color: Color(0xFF4CAF50)),
+                            SizedBox(width: 2),
+                            Text('E2E', style: TextStyle(fontSize: 10, color: Color(0xFF4CAF50))),
+                          ],
+                        ),
+                      ),
                     ],
                   ],
                 ),

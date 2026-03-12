@@ -96,11 +96,32 @@ class MeshProvider extends ChangeNotifier {
 
     _serverUrl = _settingsBox.get('serverUrl', defaultValue: '');
     _loadMessages();
+    _purgeExpiredMessages();
     _setupNearbyCallbacks();
     await gemma.init();
     gemma.onStatusChanged.listen((_) => notifyListeners());
     await crypto.init();
     notifyListeners();
+  }
+
+  static const _messageExpiryMs = 24 * 60 * 60 * 1000; // 24 hours
+
+  void _purgeExpiredMessages() {
+    final now = DateTime.now().millisecondsSinceEpoch;
+    bool changed = false;
+
+    for (final peerId in _conversations.keys.toList()) {
+      final msgs = _conversations[peerId]!;
+      final before = msgs.length;
+      msgs.removeWhere((m) => (now - m.timestamp) > _messageExpiryMs);
+      if (msgs.length != before) changed = true;
+      if (msgs.isEmpty) _conversations.remove(peerId);
+    }
+
+    if (changed) {
+      _persistAll();
+      debugPrint('[Security] Purged expired messages (>24h)');
+    }
   }
 
   void _mapEndpoint(String endpointId, String deviceId) {
