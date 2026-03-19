@@ -6,7 +6,7 @@ class GemmaService {
   static const _modelUrl =
       'https://huggingface.co/google/gemma-3-1b-it/resolve/main/gemma-3-1b-it-gpu-int8.task';
 
-  static const _hfToken = 'hf_xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx';
+  static const _hfToken = String.fromEnvironment('HF_TOKEN');
 
   bool _ready = false;
   bool get isReady => _ready;
