@@ -134,6 +134,69 @@ class _AIScreenState extends State<AIScreen> {
               ],
             ),
           ),
+          if (!modelReady) ...[
+            const SizedBox(height: 16),
+            Container(
+              margin: const EdgeInsets.symmetric(horizontal: 24),
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: const Color(0xFF1E1E22),
+                borderRadius: BorderRadius.circular(16),
+                border: Border.all(color: const Color(0xFF2C2C30)),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      const Icon(Icons.cloud_download_rounded, color: Color(0xFF81C784), size: 18),
+                      const SizedBox(width: 8),
+                      const Text('Download Gemma 3 (1B)', style: TextStyle(color: Colors.white, fontWeight: FontWeight.w600, fontSize: 13)),
+                      const Spacer(),
+                      if (!gemma.isDownloading)
+                        GestureDetector(
+                          onTap: () => gemma.installModel(),
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                            decoration: BoxDecoration(
+                              color: const Color(0xFF1B5E20),
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            child: const Text('Install', style: TextStyle(color: Colors.white, fontSize: 11, fontWeight: FontWeight.bold)),
+                          ),
+                        ),
+                    ],
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    gemma.isDownloading
+                        ? 'Downloading model... ${(gemma.downloadProgress * 100).toStringAsFixed(1)}%'
+                        : 'Download the ~500MB AI model to your phone for 100% offline, private AI assistance. Until then, Knowledge Base is active.',
+                    style: TextStyle(color: Colors.white.withValues(alpha: 0.7), fontSize: 11, height: 1.4),
+                  ),
+                  if (gemma.isDownloading) ...[
+                    const SizedBox(height: 12),
+                    ClipRRect(
+                      borderRadius: BorderRadius.circular(4),
+                      child: LinearProgressIndicator(
+                        value: gemma.downloadProgress,
+                        backgroundColor: const Color(0xFF2C2C30),
+                        color: const Color(0xFF4CAF50),
+                        minHeight: 4,
+                      ),
+                    ),
+                  ],
+                  if (gemma.lastError != null) ...[
+                    const SizedBox(height: 8),
+                    Text(
+                      'Error: ${gemma.lastError}',
+                      style: const TextStyle(color: Color(0xFFFF6E40), fontSize: 11),
+                    ),
+                  ],
+                ],
+              ),
+            ),
+          ],
           const SizedBox(height: 4),
           SingleChildScrollView(
             scrollDirection: Axis.horizontal,
