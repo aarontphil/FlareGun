@@ -85,6 +85,8 @@ class _AIScreenState extends State<AIScreen> {
   @override
   Widget build(BuildContext context) {
     final mesh = context.watch<MeshProvider>();
+    final gemma = mesh.gemma;
+    final modelReady = gemma.isReady;
 
     return SafeArea(
       child: Column(
@@ -104,24 +106,26 @@ class _AIScreenState extends State<AIScreen> {
                 Container(
                   padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
                   decoration: BoxDecoration(
-                    color: const Color(0xFF1B5E20).withValues(alpha: 0.25),
+                    color: modelReady
+                        ? const Color(0xFF1B5E20).withValues(alpha: 0.25)
+                        : const Color(0xFF1E1E22),
                     borderRadius: BorderRadius.circular(20),
                   ),
                   child: Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
                       Icon(
-                        Icons.psychology_rounded,
+                        modelReady ? Icons.psychology_rounded : Icons.auto_awesome_rounded,
                         size: 12,
-                        color: const Color(0xFF4CAF50),
+                        color: modelReady ? const Color(0xFF4CAF50) : const Color(0xFFFF6E40),
                       ),
                       const SizedBox(width: 4),
                       Text(
-                        'On-device AI',
+                        modelReady ? 'Gemma 3 LLM' : 'Knowledge Base',
                         style: TextStyle(
                           fontSize: 11,
                           fontWeight: FontWeight.w500,
-                          color: const Color(0xFF81C784),
+                          color: modelReady ? const Color(0xFF81C784) : const Color(0xFFFF6E40),
                         ),
                       ),
                     ],
@@ -210,7 +214,7 @@ class _AIScreenState extends State<AIScreen> {
                       enabled: !_generating,
                       style: const TextStyle(fontSize: 14),
                       decoration: InputDecoration(
-                        hintText: 'Ask about survival, first aid, emergencies...',
+                        hintText: modelReady ? 'Ask the AI anything...' : 'Ask about survival, first aid, emergencies...',
                         hintStyle: TextStyle(color: Colors.white.withValues(alpha: 0.2)),
                         border: InputBorder.none,
                         filled: false,
