@@ -9,9 +9,11 @@ class GemmaService {
   bool get isReady => _ready;
   bool get isDownloading => _downloading;
   double get downloadProgress => _progress;
+  String? get lastError => _lastError;
 
   bool _downloading = false;
   double _progress = 0;
+  String? _lastError;
   InferenceModel? _model;
 
   final _onStatusChanged = StreamController<void>.broadcast();
@@ -34,6 +36,7 @@ class GemmaService {
       }
     } catch (e) {
       debugPrint('[Gemma] Init error: $e');
+      _lastError = e.toString();
       _ready = false;
     }
   }
@@ -43,6 +46,7 @@ class GemmaService {
 
     _downloading = true;
     _progress = 0;
+    _lastError = null;
     _onStatusChanged.add(null);
 
     try {
@@ -60,16 +64,27 @@ class GemmaService {
       _onStatusChanged.add(null);
     } catch (e) {
       debugPrint('[Gemma] Install error: $e');
+      _lastError = e.toString();
       _downloading = false;
       _onStatusChanged.add(null);
     }
   }
 
   Future<InferenceModel> _getModel() async {
-    _model ??= await FlutterGemma.getActiveModel(
-      maxTokens: 1024,
-      preferredBackend: PreferredBackend.gpu,
-    );
+    if (_model != null) return _model!;
+
+    try {
+      _model = await FlutterGemma.getActiveModel(
+        maxTokens: 1024,
+        preferredBackend: PreferredBackend.gpu,
+      );
+    } catch (e) {
+      debugPrint('[Gemma] GPU failed, trying CPU: $e');
+      _model = await FlutterGemma.getActiveModel(
+        maxTokens: 512,
+        preferredBackend: PreferredBackend.cpu,
+      );
+    }
     return _model!;
   }
 
@@ -85,14 +100,21 @@ class GemmaService {
         isUser: true,
       ));
 
+      bool hasTokens = false;
       await for (final response in chat.generateChatResponseAsync()) {
         if (response is TextResponse) {
+          hasTokens = true;
           yield response.token;
         }
       }
+
+      if (!hasTokens) {
+        throw Exception('No response generated');
+      }
     } catch (e) {
       debugPrint('[Gemma] Chat error: $e');
-      yield 'AI model error. Using offline knowledge base instead.';
+      _lastError = e.toString();
+      rethrow;
     }
   }
 
@@ -117,6 +139,7 @@ class GemmaService {
       return buffer.toString();
     } catch (e) {
       debugPrint('[Gemma] Chat error: $e');
+      _lastError = e.toString();
       return '';
     }
   }

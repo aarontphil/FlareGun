@@ -149,9 +149,9 @@ class _AIScreenState extends State<AIScreen> {
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            Text('Download Gemma 3 LLM', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600)),
+                            Text('Install Gemma 3 AI', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600)),
                             SizedBox(height: 2),
-                            Text('1.3 GB - enables real AI responses', style: TextStyle(fontSize: 11, color: Color(0xFF4A4A4E))),
+                            Text('Bundled model - tap to activate', style: TextStyle(fontSize: 11, color: Color(0xFF4A4A4E))),
                           ],
                         ),
                       ),
@@ -181,7 +181,7 @@ class _AIScreenState extends State<AIScreen> {
                         ),
                         const SizedBox(width: 12),
                         Text(
-                          'Downloading model... ${(gemma.downloadProgress * 100).toInt()}%',
+                          'Installing model... ${(gemma.downloadProgress * 100).toInt()}%',
                           style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w500),
                         ),
                       ],

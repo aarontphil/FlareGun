@@ -526,10 +526,20 @@ class MeshProvider extends ChangeNotifier {
 
   Stream<String> aiChatStream(String query) async* {
     if (gemma.isReady) {
-      yield* gemma.chatStream(query);
+      bool gemmaFailed = false;
+      try {
+        await for (final chunk in gemma.chatStream(query)) {
+          yield chunk;
+        }
+      } catch (_) {
+        gemmaFailed = true;
+      }
+      if (gemmaFailed) {
+        yield '[Knowledge Base]\n\n';
+        yield OfflineAI.chat(query);
+      }
     } else {
-      final response = OfflineAI.chat(query);
-      yield response;
+      yield OfflineAI.chat(query);
     }
   }
 
