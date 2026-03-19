@@ -2,6 +2,20 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../services/mesh_provider.dart';
 
+const _channelColors = [
+  Color(0xFFE53935), Color(0xFF42A5F5), Color(0xFF66BB6A),
+  Color(0xFFFF6E40), Color(0xFFAB47BC), Color(0xFFFFCA28),
+  Color(0xFF26C6DA), Color(0xFFEF5350), Color(0xFF7E57C2),
+];
+
+Color _colorForChannel(String name) {
+  int hash = 0;
+  for (final c in name.codeUnits) {
+    hash = (hash * 31 + c) & 0xFFFFFFFF;
+  }
+  return _channelColors[hash % _channelColors.length];
+}
+
 class ChannelListScreen extends StatelessWidget {
   const ChannelListScreen({super.key});
 
@@ -18,7 +32,12 @@ class ChannelListScreen extends StatelessWidget {
             padding: const EdgeInsets.fromLTRB(24, 24, 24, 0),
             child: Row(
               children: [
-                const Text('Channels', style: TextStyle(fontSize: 26, fontWeight: FontWeight.w700, letterSpacing: -0.5)),
+                ShaderMask(
+                  shaderCallback: (bounds) => const LinearGradient(
+                    colors: [Color(0xFFE53935), Color(0xFFFF6E40)],
+                  ).createShader(bounds),
+                  child: const Text('Channels', style: TextStyle(fontSize: 26, fontWeight: FontWeight.w700, letterSpacing: -0.5, color: Colors.white)),
+                ),
                 const Spacer(),
                 GestureDetector(
                   onTap: () => _showCreateDialog(context, mesh),
@@ -26,7 +45,11 @@ class ChannelListScreen extends StatelessWidget {
                     width: 36, height: 36,
                     decoration: const BoxDecoration(
                       shape: BoxShape.circle,
-                      color: Color(0xFFE53935),
+                      gradient: LinearGradient(
+                        begin: Alignment.topLeft,
+                        end: Alignment.bottomRight,
+                        colors: [Color(0xFFE53935), Color(0xFFFF6E40)],
+                      ),
                     ),
                     child: const Icon(Icons.add_rounded, color: Colors.white, size: 20),
                   ),
@@ -45,17 +68,18 @@ class ChannelListScreen extends StatelessWidget {
                       width: 72, height: 72,
                       decoration: BoxDecoration(
                         shape: BoxShape.circle,
-                        color: const Color(0xFF141418),
+                        color: const Color(0xFF0E0E12),
+                        border: Border.all(color: const Color(0xFF1A1A1E)),
                       ),
-                      child: const Icon(Icons.groups_rounded, size: 36, color: Color(0xFF2A2A2E)),
+                      child: const Icon(Icons.groups_rounded, size: 36, color: Color(0xFF1E1E22)),
                     ),
                     const SizedBox(height: 20),
-                    const Text('No channels yet', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600, color: Color(0xFF6A6A6E))),
+                    const Text('No channels yet', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600, color: Color(0xFF4A4A4E))),
                     const SizedBox(height: 6),
                     Text(
                       'Create a channel to coordinate\nwith your team',
                       textAlign: TextAlign.center,
-                      style: TextStyle(fontSize: 13, color: Colors.white.withValues(alpha: 0.3)),
+                      style: TextStyle(fontSize: 13, color: Colors.white.withValues(alpha: 0.2)),
                     ),
                   ],
                 ),
@@ -71,6 +95,7 @@ class ChannelListScreen extends StatelessWidget {
                   final msgs = mesh.getChannelMessages(name);
                   final lastMsg = msgs.isNotEmpty ? msgs.last.text : 'No messages';
                   final isMember = mesh.isInChannel(name);
+                  final color = _colorForChannel(name);
 
                   return Padding(
                     padding: const EdgeInsets.only(bottom: 6),
@@ -85,8 +110,9 @@ class ChannelListScreen extends StatelessWidget {
                       child: Container(
                         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
                         decoration: BoxDecoration(
-                          color: const Color(0xFF141418),
+                          color: const Color(0xFF0E0E12),
                           borderRadius: BorderRadius.circular(14),
+                          border: Border.all(color: color.withValues(alpha: 0.1)),
                         ),
                         child: Row(
                           children: [
@@ -94,11 +120,14 @@ class ChannelListScreen extends StatelessWidget {
                               width: 42, height: 42,
                               decoration: BoxDecoration(
                                 shape: BoxShape.circle,
-                                gradient: const LinearGradient(
-                                  colors: [Color(0xFFE53935), Color(0xFFC62828)],
+                                gradient: LinearGradient(
                                   begin: Alignment.topLeft,
                                   end: Alignment.bottomRight,
+                                  colors: [color, color.withValues(alpha: 0.7)],
                                 ),
+                                boxShadow: [
+                                  BoxShadow(color: color.withValues(alpha: 0.2), blurRadius: 8),
+                                ],
                               ),
                               child: const Icon(Icons.tag_rounded, color: Colors.white, size: 20),
                             ),
@@ -113,15 +142,22 @@ class ChannelListScreen extends StatelessWidget {
                                     lastMsg,
                                     maxLines: 1,
                                     overflow: TextOverflow.ellipsis,
-                                    style: TextStyle(fontSize: 12, color: Colors.white.withValues(alpha: 0.3)),
+                                    style: TextStyle(fontSize: 12, color: Colors.white.withValues(alpha: 0.25)),
                                   ),
                                 ],
                               ),
                             ),
                             if (msgs.isNotEmpty)
-                              Text(
-                                '${msgs.length}',
-                                style: const TextStyle(fontSize: 11, color: Color(0xFF4A4A4E)),
+                              Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                                decoration: BoxDecoration(
+                                  borderRadius: BorderRadius.circular(10),
+                                  color: color.withValues(alpha: 0.15),
+                                ),
+                                child: Text(
+                                  '${msgs.length}',
+                                  style: TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: color),
+                                ),
                               ),
                           ],
                         ),
@@ -138,39 +174,69 @@ class ChannelListScreen extends StatelessWidget {
 
   void _showCreateDialog(BuildContext context, MeshProvider mesh) {
     final controller = TextEditingController();
-    showDialog(
+    showModalBottomSheet(
       context: context,
-      builder: (ctx) => AlertDialog(
-        backgroundColor: const Color(0xFF1E1E22),
-        title: const Text('Create Channel', style: TextStyle(fontSize: 16)),
-        content: TextField(
-          controller: controller,
-          autofocus: true,
-          style: const TextStyle(fontSize: 14),
-          decoration: InputDecoration(
-            hintText: 'e.g. Medical Team',
-            filled: true,
-            fillColor: const Color(0xFF0A0A0A),
-            border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
-            contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (ctx) => Padding(
+        padding: EdgeInsets.only(bottom: MediaQuery.of(ctx).viewInsets.bottom),
+        child: Container(
+          padding: const EdgeInsets.all(28),
+          decoration: const BoxDecoration(
+            color: Color(0xFF111115),
+            borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Center(child: Container(width: 40, height: 4, decoration: BoxDecoration(color: Colors.white.withValues(alpha: 0.1), borderRadius: BorderRadius.circular(2)))),
+              const SizedBox(height: 24),
+              const Text('Create Channel', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w600)),
+              const SizedBox(height: 4),
+              Text('Channels are visible to all mesh peers', style: TextStyle(fontSize: 12, color: Colors.white.withValues(alpha: 0.3))),
+              const SizedBox(height: 20),
+              TextField(
+                controller: controller,
+                autofocus: true,
+                style: const TextStyle(fontSize: 14),
+                decoration: InputDecoration(
+                  hintText: 'e.g. Medical Team',
+                  filled: true,
+                  fillColor: const Color(0xFF0A0A0A),
+                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: const BorderSide(color: Color(0xFF1A1A1E))),
+                  enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: const BorderSide(color: Color(0xFF1A1A1E))),
+                  focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: const BorderSide(color: Color(0xFFE53935))),
+                  contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                ),
+              ),
+              const SizedBox(height: 16),
+              SizedBox(
+                width: double.infinity,
+                child: GestureDetector(
+                  onTap: () {
+                    final name = controller.text.trim();
+                    if (name.isNotEmpty) {
+                      mesh.createChannel(name);
+                      Navigator.pop(ctx);
+                    }
+                  },
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(vertical: 14),
+                    decoration: BoxDecoration(
+                      gradient: const LinearGradient(colors: [Color(0xFFE53935), Color(0xFFFF6E40)]),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: const Center(
+                      child: Text('Create', style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: Colors.white)),
+                    ),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 8),
+            ],
           ),
         ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx),
-            child: const Text('Cancel', style: TextStyle(color: Color(0xFF4A4A4E))),
-          ),
-          TextButton(
-            onPressed: () {
-              final name = controller.text.trim();
-              if (name.isNotEmpty) {
-                mesh.createChannel(name);
-                Navigator.pop(ctx);
-              }
-            },
-            child: const Text('Create', style: TextStyle(color: Color(0xFFE53935))),
-          ),
-        ],
       ),
     );
   }
@@ -187,6 +253,8 @@ class ChannelChatScreen extends StatefulWidget {
 class _ChannelChatScreenState extends State<ChannelChatScreen> {
   final _controller = TextEditingController();
   final _scrollController = ScrollController();
+
+  Color get _accentColor => _colorForChannel(widget.channelName);
 
   void _send() async {
     final text = _controller.text.trim();
@@ -226,37 +294,56 @@ class _ChannelChatScreenState extends State<ChannelChatScreen> {
     final mesh = context.watch<MeshProvider>();
     final messages = mesh.getChannelMessages(widget.channelName);
     final myId = mesh.identity.id;
+    final color = _accentColor;
 
     return Scaffold(
-      backgroundColor: const Color(0xFF0A0A0A),
+      backgroundColor: const Color(0xFF050508),
       appBar: AppBar(
-        backgroundColor: const Color(0xFF0A0A0A),
+        backgroundColor: const Color(0xFF050508),
         surfaceTintColor: Colors.transparent,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back_rounded, color: Color(0xFFE53935), size: 22),
+          icon: Icon(Icons.arrow_back_rounded, color: color, size: 22),
           onPressed: () => Navigator.pop(context),
         ),
         title: Row(
           children: [
             Container(
               width: 34, height: 34,
-              decoration: const BoxDecoration(
+              decoration: BoxDecoration(
                 shape: BoxShape.circle,
-                gradient: LinearGradient(colors: [Color(0xFFE53935), Color(0xFFC62828)]),
+                gradient: LinearGradient(
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                  colors: [color, color.withValues(alpha: 0.7)],
+                ),
               ),
               child: const Icon(Icons.tag_rounded, color: Colors.white, size: 16),
             ),
             const SizedBox(width: 12),
-            Text(widget.channelName, style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w600)),
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(widget.channelName, style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w600)),
+                Text('Group channel', style: TextStyle(fontSize: 11, color: Colors.white.withValues(alpha: 0.25))),
+              ],
+            ),
           ],
         ),
         actions: [
-          IconButton(
-            icon: const Icon(Icons.exit_to_app_rounded, color: Color(0xFF4A4A4E), size: 20),
-            onPressed: () {
+          GestureDetector(
+            onTap: () {
               mesh.leaveChannel(widget.channelName);
               Navigator.pop(context);
             },
+            child: Container(
+              margin: const EdgeInsets.only(right: 16),
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(8),
+                border: Border.all(color: const Color(0xFFE53935).withValues(alpha: 0.2)),
+              ),
+              child: const Text('Leave', style: TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: Color(0xFFE53935))),
+            ),
           ),
         ],
       ),
@@ -266,8 +353,8 @@ class _ChannelChatScreenState extends State<ChannelChatScreen> {
             child: messages.isEmpty
                 ? Center(
                     child: Text(
-                      'No messages in #${widget.channelName}',
-                      style: TextStyle(fontSize: 14, color: Colors.white.withValues(alpha: 0.2)),
+                      'No messages in this channel',
+                      style: TextStyle(fontSize: 14, color: Colors.white.withValues(alpha: 0.15)),
                     ),
                   )
                 : ListView.builder(
@@ -285,13 +372,16 @@ class _ChannelChatScreenState extends State<ChannelChatScreen> {
                           margin: const EdgeInsets.only(bottom: 6),
                           padding: const EdgeInsets.fromLTRB(14, 10, 14, 8),
                           decoration: BoxDecoration(
-                            color: isOwn ? const Color(0xFFE53935) : const Color(0xFF141418),
+                            gradient: isOwn
+                                ? LinearGradient(colors: [color, color.withValues(alpha: 0.8)])
+                                : LinearGradient(colors: [Colors.white.withValues(alpha: 0.06), Colors.white.withValues(alpha: 0.03)]),
                             borderRadius: BorderRadius.only(
                               topLeft: const Radius.circular(16),
                               topRight: const Radius.circular(16),
                               bottomLeft: Radius.circular(isOwn ? 16 : 4),
                               bottomRight: Radius.circular(isOwn ? 4 : 16),
                             ),
+                            border: isOwn ? null : Border.all(color: Colors.white.withValues(alpha: 0.06)),
                           ),
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
@@ -301,7 +391,7 @@ class _ChannelChatScreenState extends State<ChannelChatScreen> {
                                   padding: const EdgeInsets.only(bottom: 4),
                                   child: Text(
                                     msg.senderName,
-                                    style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: Color(0xFFE53935)),
+                                    style: TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: color),
                                   ),
                                 ),
                               Text(
@@ -326,16 +416,17 @@ class _ChannelChatScreenState extends State<ChannelChatScreen> {
           Container(
             padding: const EdgeInsets.fromLTRB(16, 10, 16, 16),
             decoration: BoxDecoration(
-              color: const Color(0xFF0A0A0A),
-              border: Border(top: BorderSide(color: Colors.white.withValues(alpha: 0.04))),
+              color: const Color(0xFF050508),
+              border: Border(top: BorderSide(color: Colors.white.withValues(alpha: 0.03))),
             ),
             child: Row(
               children: [
                 Expanded(
                   child: Container(
                     decoration: BoxDecoration(
-                      color: const Color(0xFF141418),
+                      color: const Color(0xFF111115),
                       borderRadius: BorderRadius.circular(24),
+                      border: Border.all(color: const Color(0xFF1A1A1E)),
                     ),
                     child: TextField(
                       controller: _controller,
@@ -344,7 +435,7 @@ class _ChannelChatScreenState extends State<ChannelChatScreen> {
                       style: const TextStyle(fontSize: 14),
                       decoration: InputDecoration(
                         hintText: 'Message #${widget.channelName}',
-                        hintStyle: TextStyle(color: Colors.white.withValues(alpha: 0.2)),
+                        hintStyle: TextStyle(color: Colors.white.withValues(alpha: 0.15)),
                         border: InputBorder.none,
                         contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
                       ),
@@ -356,7 +447,14 @@ class _ChannelChatScreenState extends State<ChannelChatScreen> {
                   onTap: _send,
                   child: Container(
                     width: 44, height: 44,
-                    decoration: const BoxDecoration(color: Color(0xFFE53935), shape: BoxShape.circle),
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      gradient: LinearGradient(
+                        begin: Alignment.topLeft,
+                        end: Alignment.bottomRight,
+                        colors: [color, color.withValues(alpha: 0.7)],
+                      ),
+                    ),
                     child: const Icon(Icons.send_rounded, color: Colors.white, size: 20),
                   ),
                 ),

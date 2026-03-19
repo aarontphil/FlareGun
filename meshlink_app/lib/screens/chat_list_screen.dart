@@ -19,9 +19,14 @@ class ChatListScreen extends StatelessWidget {
             padding: const EdgeInsets.fromLTRB(24, 24, 24, 0),
             child: Row(
               children: [
-                const Text(
-                  'Chats',
-                  style: TextStyle(fontSize: 26, fontWeight: FontWeight.w700, letterSpacing: -0.5),
+                ShaderMask(
+                  shaderCallback: (bounds) => const LinearGradient(
+                    colors: [Color(0xFFE53935), Color(0xFFFF6E40)],
+                  ).createShader(bounds),
+                  child: const Text(
+                    'Chats',
+                    style: TextStyle(fontSize: 26, fontWeight: FontWeight.w700, letterSpacing: -0.5, color: Colors.white),
+                  ),
                 ),
                 const Spacer(),
                 Container(
