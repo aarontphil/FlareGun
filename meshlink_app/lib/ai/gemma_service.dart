@@ -3,9 +3,6 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter_gemma/flutter_gemma.dart';
 
 class GemmaService {
-  static const _modelUrl =
-      'https://huggingface.co/google/gemma-3-1b-it/resolve/main/gemma-3-1b-it-gpu-int8.task';
-
   static const _hfToken = String.fromEnvironment('HF_TOKEN');
 
   bool _ready = false;
@@ -33,7 +30,7 @@ class GemmaService {
       _ready = FlutterGemma.hasActiveModel();
       _onStatusChanged.add(null);
       if (!_ready) {
-        downloadModel();
+        installModel();
       }
     } catch (e) {
       debugPrint('[Gemma] Init error: $e');
@@ -41,7 +38,7 @@ class GemmaService {
     }
   }
 
-  Future<void> downloadModel() async {
+  Future<void> installModel() async {
     if (_downloading || _ready) return;
 
     _downloading = true;
@@ -51,10 +48,8 @@ class GemmaService {
     try {
       await FlutterGemma.installModel(
         modelType: ModelType.gemmaIt,
-      ).fromNetwork(
-        _modelUrl,
-        token: _hfToken,
-        foreground: true,
+      ).fromAsset(
+        'assets/model.task',
       ).withProgress((int percent) {
         _progress = percent / 100.0;
         _onStatusChanged.add(null);
@@ -64,7 +59,7 @@ class GemmaService {
       _downloading = false;
       _onStatusChanged.add(null);
     } catch (e) {
-      debugPrint('[Gemma] Download error: $e');
+      debugPrint('[Gemma] Install error: $e');
       _downloading = false;
       _onStatusChanged.add(null);
     }

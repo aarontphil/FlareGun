@@ -133,7 +133,7 @@ class _AIScreenState extends State<AIScreen> {
             Padding(
               padding: const EdgeInsets.fromLTRB(24, 16, 24, 0),
               child: GestureDetector(
-                onTap: () => gemma.downloadModel(),
+                onTap: () => gemma.installModel(),
                 child: Container(
                   padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
                   decoration: BoxDecoration(

@@ -19,6 +19,7 @@ meshlink_app/android/.gradle/
 meshlink_app/android/local.properties
 meshlink_app/android/app/build/
 meshlink_app/.idea/
+meshlink_app/assets/model.task
 
 # IDE
 .vscode/
