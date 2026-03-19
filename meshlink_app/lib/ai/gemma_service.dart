@@ -11,27 +11,33 @@ class GemmaService {
   bool _downloading = false;
   double _progress = 0;
   InferenceModel? _model;
+  bool _initCalled = false;
 
   final _onStatusChanged = StreamController<void>.broadcast();
   Stream<void> get onStatusChanged => _onStatusChanged.stream;
 
   static const _systemPrompt =
-      'You are FlareGun AI, a disaster relief assistant running on a mobile device. '
-      'You help people during emergencies with survival tips, first aid, '
-      'earthquake/flood/fire safety, finding shelter, and staying safe. '
-      'Give short, clear, actionable answers. '
-      'If someone is in immediate danger, prioritize life-saving instructions first.';
+      'You are FlareGun AI, a disaster relief assistant. '
+      'Give short, clear, actionable answers about survival, first aid, '
+      'earthquake/flood/fire safety, finding shelter, and staying safe.';
 
   Future<void> init() async {
+    if (_initCalled) return;
+    _initCalled = true;
+
     try {
-      _ready = FlutterGemma.hasActiveModel();
-      _onStatusChanged.add(null);
-      if (!_ready) {
-        installModel();
+      final hasModel = FlutterGemma.hasActiveModel();
+      debugPrint('[Gemma] hasActiveModel: $hasModel');
+      if (hasModel) {
+        _ready = true;
+        _onStatusChanged.add(null);
+      } else {
+        await installModel();
       }
     } catch (e) {
-      debugPrint('[Gemma] Init: $e');
+      debugPrint('[Gemma] init error: $e');
       _ready = false;
+      await installModel();
     }
   }
 
@@ -41,24 +47,24 @@ class GemmaService {
     _downloading = true;
     _progress = 0;
     _onStatusChanged.add(null);
+    debugPrint('[Gemma] Starting model install from bundled asset...');
 
     try {
       await FlutterGemma.installModel(
         modelType: ModelType.gemmaIt,
       ).fromBundled(
         'gemma3.task',
-      ).withProgress((progress) {
-        _progress = progress / 100.0;
-        _onStatusChanged.add(null);
-      }).install();
+      ).install();
 
       _ready = true;
       _downloading = false;
+      _progress = 1.0;
       _onStatusChanged.add(null);
-      debugPrint('[Gemma] Model installed successfully');
+      debugPrint('[Gemma] Model installed successfully!');
     } catch (e) {
       debugPrint('[Gemma] Install error: $e');
       _downloading = false;
+      _ready = false;
       _onStatusChanged.add(null);
     }
   }
@@ -67,23 +73,31 @@ class GemmaService {
     if (_model != null) return _model!;
 
     try {
+      debugPrint('[Gemma] Getting active model (GPU)...');
       _model = await FlutterGemma.getActiveModel(
         maxTokens: 512,
         preferredBackend: PreferredBackend.gpu,
       );
-    } catch (gpuError) {
-      debugPrint('[Gemma] GPU failed ($gpuError), trying CPU...');
-      _model = await FlutterGemma.getActiveModel(
-        maxTokens: 256,
-        preferredBackend: PreferredBackend.cpu,
-      );
+      debugPrint('[Gemma] GPU model loaded');
+    } catch (gpuErr) {
+      debugPrint('[Gemma] GPU failed: $gpuErr, trying CPU...');
+      try {
+        _model = await FlutterGemma.getActiveModel(
+          maxTokens: 256,
+          preferredBackend: PreferredBackend.cpu,
+        );
+        debugPrint('[Gemma] CPU model loaded');
+      } catch (cpuErr) {
+        debugPrint('[Gemma] CPU also failed: $cpuErr');
+        rethrow;
+      }
     }
     return _model!;
   }
 
   Stream<String> chatStream(String query) async* {
     if (!_ready) {
-      throw Exception('Model not ready');
+      throw Exception('Model not installed');
     }
 
     try {
@@ -101,7 +115,7 @@ class GemmaService {
         }
       }
     } catch (e) {
-      debugPrint('[Gemma] Chat error: $e');
+      debugPrint('[Gemma] chatStream error: $e');
       rethrow;
     }
   }
