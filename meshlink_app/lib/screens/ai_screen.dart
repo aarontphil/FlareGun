@@ -85,8 +85,6 @@ class _AIScreenState extends State<AIScreen> {
   @override
   Widget build(BuildContext context) {
     final mesh = context.watch<MeshProvider>();
-    final gemma = mesh.gemma;
-    final modelReady = gemma.isReady;
 
     return SafeArea(
       child: Column(
@@ -96,31 +94,34 @@ class _AIScreenState extends State<AIScreen> {
             padding: const EdgeInsets.fromLTRB(24, 24, 24, 0),
             child: Row(
               children: [
-                const Text('AI Assistant', style: TextStyle(fontSize: 26, fontWeight: FontWeight.w700, letterSpacing: -0.5)),
+                ShaderMask(
+                  shaderCallback: (bounds) => const LinearGradient(
+                    colors: [Color(0xFFE53935), Color(0xFFFF6E40)],
+                  ).createShader(bounds),
+                  child: const Text('AI Assistant', style: TextStyle(fontSize: 26, fontWeight: FontWeight.w700, letterSpacing: -0.5, color: Colors.white)),
+                ),
                 const Spacer(),
                 Container(
                   padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
                   decoration: BoxDecoration(
-                    color: modelReady
-                        ? const Color(0xFF1B5E20).withValues(alpha: 0.25)
-                        : const Color(0xFF1E1E22),
+                    color: const Color(0xFF1B5E20).withValues(alpha: 0.25),
                     borderRadius: BorderRadius.circular(20),
                   ),
                   child: Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
                       Icon(
-                        modelReady ? Icons.psychology_rounded : Icons.cloud_download_rounded,
+                        Icons.psychology_rounded,
                         size: 12,
-                        color: modelReady ? const Color(0xFF4CAF50) : const Color(0xFF4A4A4E),
+                        color: const Color(0xFF4CAF50),
                       ),
                       const SizedBox(width: 4),
                       Text(
-                        modelReady ? 'Gemma 3 LLM' : 'Keyword mode',
+                        'On-device AI',
                         style: TextStyle(
                           fontSize: 11,
                           fontWeight: FontWeight.w500,
-                          color: modelReady ? const Color(0xFF81C784) : const Color(0xFF4A4A4E),
+                          color: const Color(0xFF81C784),
                         ),
                       ),
                     ],
@@ -129,77 +130,7 @@ class _AIScreenState extends State<AIScreen> {
               ],
             ),
           ),
-          if (!gemma.isReady && !gemma.isDownloading)
-            Padding(
-              padding: const EdgeInsets.fromLTRB(24, 16, 24, 0),
-              child: GestureDetector(
-                onTap: () => gemma.installModel(),
-                child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                  decoration: BoxDecoration(
-                    color: const Color(0xFF141418),
-                    borderRadius: BorderRadius.circular(12),
-                    border: Border.all(color: const Color(0xFFE53935).withValues(alpha: 0.3)),
-                  ),
-                  child: const Row(
-                    children: [
-                      Icon(Icons.download_rounded, color: Color(0xFFE53935), size: 20),
-                      SizedBox(width: 12),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text('Install Gemma 3 AI', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600)),
-                            SizedBox(height: 2),
-                            Text('Bundled model - tap to activate', style: TextStyle(fontSize: 11, color: Color(0xFF4A4A4E))),
-                          ],
-                        ),
-                      ),
-                      Icon(Icons.arrow_forward_ios_rounded, color: Color(0xFF4A4A4E), size: 14),
-                    ],
-                  ),
-                ),
-              ),
-            ),
-          if (gemma.isDownloading)
-            Padding(
-              padding: const EdgeInsets.fromLTRB(24, 16, 24, 0),
-              child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-                decoration: BoxDecoration(
-                  color: const Color(0xFF141418),
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
-                      children: [
-                        const SizedBox(
-                          width: 14, height: 14,
-                          child: CircularProgressIndicator(strokeWidth: 2, color: Color(0xFFE53935)),
-                        ),
-                        const SizedBox(width: 12),
-                        Text(
-                          'Installing model... ${(gemma.downloadProgress * 100).toInt()}%',
-                          style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w500),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 10),
-                    ClipRRect(
-                      borderRadius: BorderRadius.circular(4),
-                      child: LinearProgressIndicator(
-                        value: gemma.downloadProgress,
-                        backgroundColor: const Color(0xFF1E1E22),
-                        valueColor: const AlwaysStoppedAnimation(Color(0xFFE53935)),
-                        minHeight: 4,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ),
+          const SizedBox(height: 4),
           SingleChildScrollView(
             scrollDirection: Axis.horizontal,
             padding: const EdgeInsets.fromLTRB(24, 16, 24, 8),
@@ -279,7 +210,7 @@ class _AIScreenState extends State<AIScreen> {
                       enabled: !_generating,
                       style: const TextStyle(fontSize: 14),
                       decoration: InputDecoration(
-                        hintText: modelReady ? 'Ask the AI anything...' : 'Ask about survival...',
+                        hintText: 'Ask about survival, first aid, emergencies...',
                         hintStyle: TextStyle(color: Colors.white.withValues(alpha: 0.2)),
                         border: InputBorder.none,
                         filled: false,
