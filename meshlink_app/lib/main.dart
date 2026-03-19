@@ -8,8 +8,13 @@ import 'screens/ai_screen.dart';
 import 'screens/settings_screen.dart';
 import 'screens/channel_screen.dart';
 import 'screens/splash_screen.dart';
+import 'package:flutter_gemma/flutter_gemma.dart';
+
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  await FlutterGemma.initialize(
+    huggingFaceToken: const String.fromEnvironment('HF_TOKEN'),
+  );
   SystemChrome.setSystemUIOverlayStyle(
     const SystemUiOverlayStyle(
       statusBarColor: Colors.transparent,
