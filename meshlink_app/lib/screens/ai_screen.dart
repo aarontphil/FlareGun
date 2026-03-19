@@ -121,7 +121,7 @@ class _AIScreenState extends State<AIScreen> {
                       ),
                       const SizedBox(width: 4),
                       Text(
-                        modelReady ? 'Gemma 3 LLM' : 'Knowledge Base',
+                        modelReady ? 'Gemma 2B LLM' : 'Knowledge Base',
                         style: TextStyle(
                           fontSize: 11,
                           fontWeight: FontWeight.w500,
