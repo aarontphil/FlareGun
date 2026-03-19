@@ -8,7 +8,6 @@ import 'screens/ai_screen.dart';
 import 'screens/settings_screen.dart';
 import 'screens/channel_screen.dart';
 import 'screens/splash_screen.dart';
-
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   SystemChrome.setSystemUIOverlayStyle(
