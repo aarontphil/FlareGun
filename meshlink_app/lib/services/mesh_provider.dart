@@ -346,7 +346,7 @@ class MeshProvider extends ChangeNotifier {
     notifyListeners();
   }
 
-  // --- Channels ---
+
   final Map<String, Set<String>> _channels = {};
   List<String> get channels => _channels.keys.toList();
 
@@ -394,7 +394,7 @@ class MeshProvider extends ChangeNotifier {
     await _sendViaAllEndpoints(payload);
   }
 
-  // --- Location sharing ---
+
   Future<void> sendLocation(String peerId) async {
     await location.refreshLocation();
     if (!location.hasLocation) return;

@@ -377,7 +377,7 @@ class _RadarPainter extends CustomPainter {
     final center = Offset(size.width / 2, size.height / 2);
     final maxR = size.width / 2;
 
-    // Grid rings
+
     for (int i = 1; i <= 3; i++) {
       final r = maxR * i / 3;
       canvas.drawCircle(
@@ -389,14 +389,14 @@ class _RadarPainter extends CustomPainter {
       );
     }
 
-    // Cross lines
+
     final linePaint = Paint()
       ..color = const Color(0xFFE53935).withValues(alpha: 0.04)
       ..strokeWidth = 0.5;
     canvas.drawLine(Offset(center.dx, center.dy - maxR), Offset(center.dx, center.dy + maxR), linePaint);
     canvas.drawLine(Offset(center.dx - maxR, center.dy), Offset(center.dx + maxR, center.dy), linePaint);
 
-    // Sweep cone
+
     final sweepPaint = Paint()
       ..shader = SweepGradient(
         center: Alignment.center,
@@ -409,7 +409,7 @@ class _RadarPainter extends CustomPainter {
       ).createShader(Rect.fromCircle(center: center, radius: maxR));
     canvas.drawCircle(center, maxR, sweepPaint);
 
-    // Sweep line
+
     final lineEnd = Offset(
       center.dx + maxR * cos(sweepAngle),
       center.dy + maxR * sin(sweepAngle),
@@ -421,7 +421,7 @@ class _RadarPainter extends CustomPainter {
         ..strokeWidth = 1.5,
     );
 
-    // Ripple rings
+
     for (int i = 0; i < 3; i++) {
       final ripple = ((pulseValue + i * 0.33) % 1.0);
       final r = 24 + (maxR - 24) * ripple;

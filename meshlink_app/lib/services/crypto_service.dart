@@ -21,8 +21,7 @@ class CryptoService {
 
   bool hasSharedKey(String peerId) => _sharedKeys.containsKey(peerId);
 
-  /// Generate a 6-digit safety number for manual verification.
-  /// Both parties produce the same number from their combined public keys.
+
   String getSafetyNumber(String peerId) {
     final peerPubB64 = _peerPublicKeysB64[peerId];
     if (peerPubB64 == null || _publicKey == null) return '------';
@@ -30,7 +29,7 @@ class CryptoService {
     final myB64 = publicKeyBase64;
     final keys = [myB64, peerPubB64]..sort();
     final combined = utf8.encode(keys.join(':'));
-    // Use a simple hash — synchronous since we just need bytes
+
     int h = 0x811c9dc5;
     for (final b in combined) {
       h = ((h ^ b) * 0x01000193) & 0xFFFFFFFF;
@@ -118,7 +117,7 @@ class CryptoService {
     _ratchetCounters.putIfAbsent(peerId, () => 0);
   }
 
-  /// Ratchet the key forward using HKDF — provides forward secrecy.
+
   Future<SecretKey> _ratchetKey(String peerId) async {
     final baseKey = _sharedKeys[peerId];
     if (baseKey == null) throw StateError('No shared key for $peerId');
@@ -161,7 +160,7 @@ class CryptoService {
       final ct = Uint8List.fromList(secretBox.cipherText);
       final counterBytes = Uint8List(4)..buffer.asByteData().setInt32(0, counter);
 
-      // Format: [4 bytes counter][12 bytes nonce][16 bytes MAC][ciphertext]
+
       final combined = Uint8List(4 + nonce.length + mac.length + ct.length);
       combined.setRange(0, 4, counterBytes);
       combined.setRange(4, 4 + nonce.length, nonce);
@@ -188,7 +187,7 @@ class CryptoService {
       final mac = Mac(combined.sublist(16, 32));
       final ct = combined.sublist(32);
 
-      // Derive the same ratcheted key using the counter from the message
+
       final info = utf8.encode('flaregun-ratchet-$counter');
       final msgKey = await _hkdf.deriveKey(
         secretKey: baseKey,
@@ -198,7 +197,7 @@ class CryptoService {
       final secretBox = SecretBox(ct, nonce: nonce, mac: mac);
       final plainBytes = await _aes.decrypt(secretBox, secretKey: msgKey);
 
-      // Advance our ratchet counter if needed
+
       final ourCounter = _ratchetCounters[peerId] ?? 0;
       if (counter >= ourCounter) {
         _ratchetCounters[peerId] = counter + 1;
