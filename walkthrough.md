@@ -271,7 +271,7 @@ meshlink_app/lib/
 
 ---
 
-## 7. Expected Viva Questions and Answers
+## 7. FAQS
 
 ### Architecture
 
